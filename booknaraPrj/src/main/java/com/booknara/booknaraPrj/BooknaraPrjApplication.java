@@ -1,4 +1,4 @@
-package com.example.booknaraPrj;
+package com.booknara.booknaraPrj;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
