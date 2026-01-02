@@ -32,7 +32,6 @@ public class InfoNaruPageImportService {
     private String infonaruKey;
 
     // 정보나루 API 페이지 1건을 DB에 적재
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public boolean importOnePage(int pageNo, int pageSize) {
 
         // API 요청 파라미터 구성

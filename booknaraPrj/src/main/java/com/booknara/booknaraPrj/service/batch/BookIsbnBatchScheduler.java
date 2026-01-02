@@ -20,7 +20,7 @@ public class BookIsbnBatchScheduler {
     /**
      * 매일 새벽 3시 실행 (KST 기준)
      */
-    @Scheduled(cron = "0 55 7 * * *")
+    @Scheduled(cron = "0 29 17 * * *")
     public void runNightlyBatch() {
 
         if (!RUNNING.compareAndSet(false, true)) {

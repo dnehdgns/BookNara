@@ -13,7 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClientResponseException;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -29,7 +32,10 @@ public class NaverBookSyncService {
     // =========================
     private static final int MAX_RETRY_COUNT = 3;
     private static final long INITIAL_BACKOFF_MS = 200;
-
+    //KeyIndex별 429 누적 횟수(일일 한도)
+    private final ConcurrentHashMap<Integer, Integer> daily429Count = new ConcurrentHashMap<>();
+    //횟수 시준
+    private static final int DAILY_429_COUNT_Limit=3;
     /** 429 발생 시 해당 API Key를 잠시 제외 */
     private static final long KEY_COOLDOWN_ON_429_MS = 15_000; // 15초
 
@@ -182,19 +188,25 @@ public class NaverBookSyncService {
                 naverClient.clearLastKeyIndex();
 
                 if (statusCode == 429) {
-                    //  429면 "해당 키"를 잠시 제외
                     if (keyIdx != null) {
+                        int count = daily429Count.merge(keyIdx, 1, Integer::sum);
+
+                        // ✅ 반복 429 → 오늘 소진 판단
+                        if (count >= DAILY_429_COUNT_Limit) {
+                            long until = getNextScheduledTime();
+                            naverClient.cooldownKeyUntil(keyIdx, until);
+                            //자정 쿨다운시 리셋
+                            daily429Count.remove(keyIdx);
+
+                            log.warn("naver key daily exhausted. keyIdx={} until={}", keyIdx, until);
+                            return null;
+                        }
+
+                        // ❌ 아직은 초당 제한으로 판단 → 짧은 쿨다운
                         naverClient.cooldownKey(keyIdx, KEY_COOLDOWN_ON_429_MS);
                     }
 
-                    long jitterMs = (long) (Math.random() * 150);
-
-                    log.warn(
-                            "naver rate-limited isbn13={} attempt={} keyIdx={} backoff={}ms cooldown={}ms",
-                            isbn13, attempt, keyIdx, backoffMs, KEY_COOLDOWN_ON_429_MS
-                    );
-
-                    Thread.sleep(backoffMs + jitterMs);
+                    Thread.sleep(backoffMs);
                     backoffMs = Math.min(backoffMs * 2, 3000);
                     continue;
                 }
@@ -239,5 +251,19 @@ public class NaverBookSyncService {
         if (value == null) return null;
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private static final ZoneId KST_ZONE = ZoneId.of("Asia/Seoul");
+    private static final long DELAY_MINUTES = 5;
+
+    // 이름 추천: getNextScheduledTime()
+    private long getNextScheduledTime() {
+        return ZonedDateTime.now(KST_ZONE)
+                .plusDays(1)
+                .toLocalDate()
+                .atStartOfDay(KST_ZONE)
+                .plusMinutes(DELAY_MINUTES)
+                .toInstant()
+                .toEpochMilli();
     }
 }

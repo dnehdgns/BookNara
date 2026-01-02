@@ -20,13 +20,12 @@ public class BookIsbnBatchService {
 
     /**
      * 도서 ISBN 데이터 전체 배치 파이프라인
-     *
      * 단계:
      * 1) InfoNaru 기본 적재 (TEMP, NOTREADY)
      * 2) Naver 보강 (저자 / 설명 / 보조 이미지)
      * 3) Aladin 보강 (출간일 / 카테고리 / 대표 이미지)
      * 4) READY 데이터 운영 테이블 반영 (MERGE)
-     *
+
      * ※ 각 단계는 내부적으로 limit/loop를 관리한다.
      */
     public void runBatch() {
