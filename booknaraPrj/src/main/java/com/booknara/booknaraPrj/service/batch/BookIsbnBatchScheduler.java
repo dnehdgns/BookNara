@@ -16,7 +16,7 @@ public class BookIsbnBatchScheduler {
      * 매일 새벽 3시 실행 (KST)
      */
     // 초/분/시
-    @Scheduled(cron = "0 00 3  * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 8 13  * * *", zone = "Asia/Seoul")
     public void runNightlyBatch() {
         log.info("⏰ Nightly batch triggered (KST 03:00)");
         executor.execute("SCHEDULE");

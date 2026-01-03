@@ -36,26 +36,26 @@ public class BookIsbnBatchService {
         // ---------------------------------
         // [1/4] InfoNaru → TEMP
         // ---------------------------------
-        try {
-            log.info("[1/4] InfoNaru import started");
-            infoNaruService.importTop100k();
-            log.info("[1/4] InfoNaru import finished");
-        } catch (Exception e) {
-            // ✅ 이 단계가 무너지면 이후 단계 의미가 약함 -> 중단
-            log.error("❌ [1/4] InfoNaru import failed -> stop pipeline", e);
-            return;
-        }
+//        try {
+//            log.info("[1/4] InfoNaru import started");
+//            infoNaruService.importTop100k();
+//            log.info("[1/4] InfoNaru import finished");
+//        } catch (Exception e) {
+//            // ✅ 이 단계가 무너지면 이후 단계 의미가 약함 -> 중단
+//            log.error("❌ [1/4] InfoNaru import failed -> stop pipeline", e);
+//            return;
+//        }
 
         // ---------------------------------
         // [2/4] Naver 보강
         // ---------------------------------
-        try {
-            log.info("[2/4] Naver sync started");
-            naverBookSyncService.syncLoop(200);
-            log.info("[2/4] Naver sync finished");
-        } catch (Exception e) {
-            log.error("❌ [2/4] Naver sync failed -> continue pipeline", e);
-        }
+//        try {
+//            log.info("[2/4] Naver sync started");
+//            naverBookSyncService.syncLoop(200);
+//            log.info("[2/4] Naver sync finished");
+//        } catch (Exception e) {
+//            log.error("❌ [2/4] Naver sync failed -> continue pipeline", e);
+//        }
 
         // ---------------------------------
         // [3/4] Aladin 보강

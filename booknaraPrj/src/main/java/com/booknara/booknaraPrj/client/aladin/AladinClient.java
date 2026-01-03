@@ -44,10 +44,6 @@ public class AladinClient {
 
     private String selectKey() {
         List<String> keys = aladinProperties.getKeys();
-        if (keys == null || keys.isEmpty()) {
-            throw new IllegalStateException("Aladin API keys not configured");
-        }
-
         int size = keys.size();
         long now = System.currentTimeMillis();
 
@@ -61,10 +57,10 @@ public class AladinClient {
             }
         }
 
-        int idx = Math.floorMod(apiKeyIndex.getAndIncrement(), size);
-        lastKeyIndex.set(idx);
-        return keys.get(idx);
+        // 모든 키 요청한도 소진
+        throw new IllegalStateException("알라딘 API key들의 모든 일일 요청한도를 소진하였습니다.");
     }
+
 
     /**
      * 알라딘 ItemLookUp API를 1회 호출해서 RAW(XML/JSON) 문자열로 반환
