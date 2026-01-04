@@ -3,7 +3,7 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.booknara.booknaraPrj.mapper.BookBatchMapper">
+<mapper namespace="com.booknara.booknaraPrj.bookAPI.mapper.BookBatchMapper">
 
     <!-- =========================================================
          STEP 0) TEMP 초기 삽입 (InfoNaru 등)
@@ -20,8 +20,8 @@
             #{bookIsbnTemp.statusCd})
         </foreach>
         ON DUPLICATE KEY UPDATE
-        book_title        = COALESCE(VALUES(book_title), book_title),
-        publisher         = COALESCE(VALUES(publisher), publisher),
+        book_title          = COALESCE(VALUES(book_title), book_title),
+        publisher           = COALESCE(VALUES(publisher), publisher),
         infonaru_fetched_at = VALUES(infonaru_fetched_at);
     </insert>
 
@@ -60,7 +60,7 @@
          - AUTHORS / DESCRIPTION / NAVER_IMAGE
          - (메타는 updateTempNaverMeta에서 처리)
     -->
-    <update id="updateTempFromNaver" parameterType="com.booknara.booknaraPrj.domain.BookIsbnTempDTO">
+    <update id="updateTempFromNaver" parameterType="com.booknara.booknaraPrj.bookAPI.domain.BookIsbnTempDTO">
         UPDATE BOOK_ISBN_TEMP
         SET
         AUTHORS     = COALESCE(#{authors}, AUTHORS),
@@ -103,12 +103,13 @@
     <!-- STEP 2-3) 알라딘 데이터 업데이트 (성공+데이터 있을 때만)
          - PUBDATE / GENRE_ID / ALADIN_IMAGE_BIG / DESCRIPTION
          - (메타는 updateTempAladinMeta에서 처리)
+         ✅ GENRE_ID=0은 무효값으로 간주하고 NULL 처리하여 저장(정규화)
     -->
-    <update id="updateTempFromAladin" parameterType="com.booknara.booknaraPrj.domain.BookIsbnTempDTO">
+    <update id="updateTempFromAladin" parameterType="com.booknara.booknaraPrj.bookAPI.domain.BookIsbnTempDTO">
         UPDATE BOOK_ISBN_TEMP
         SET
         PUBDATE          = COALESCE(#{pubdate}, PUBDATE),
-        GENRE_ID         = COALESCE(#{genreId}, GENRE_ID),
+        GENRE_ID         = COALESCE(NULLIF(#{genreId}, 0), GENRE_ID),
         ALADIN_IMAGE_BIG = COALESCE(#{aladinImageBig}, ALADIN_IMAGE_BIG),
         DESCRIPTION      = COALESCE(#{description}, DESCRIPTION)
         WHERE ISBN13 = #{isbn13}
@@ -143,38 +144,52 @@
     </update>
 
     <!-- STEP 3-4) TEMP 단건 조회 (READY 판정용) -->
-    <select id="selectTempByIsbn13" resultType="com.booknara.booknaraPrj.domain.BookIsbnTempDTO">
+    <select id="selectTempByIsbn13" resultType="com.booknara.booknaraPrj.bookAPI.domain.BookIsbnTempDTO">
         SELECT
-        ISBN13            AS isbn13,
-        BOOK_TITLE        AS bookTitle,
-        AUTHORS           AS authors,
-        PUBLISHER         AS publisher,
-        GENRE_ID          AS genreId,
-        DESCRIPTION       AS description,
-        PUBDATE           AS pubdate,
-        NAVER_IMAGE       AS naverImage,
-        ALADIN_IMAGE_BIG  AS aladinImageBig,
-        DATA_HASH         AS dataHash,
+        ISBN13              AS isbn13,
+        BOOK_TITLE          AS bookTitle,
+        AUTHORS             AS authors,
+        PUBLISHER           AS publisher,
+        GENRE_ID            AS genreId,
+        DESCRIPTION         AS description,
+        PUBDATE             AS pubdate,
+        NAVER_IMAGE         AS naverImage,
+        ALADIN_IMAGE_BIG    AS aladinImageBig,
+        DATA_HASH           AS dataHash,
         INFONARU_FETCHED_AT AS infonaruFetchedAt,
-        NAVER_FETCHED_AT  AS naverFetchedAt,
-        ALADIN_FETCHED_AT AS aladinFetchedAt,
-        NAVER_RES_STATUS  AS naverResStatus,
-        ALADIN_RES_STATUS AS aladinResStatus,
-        STATUS_CD         AS statusCd
+        NAVER_FETCHED_AT    AS naverFetchedAt,
+        ALADIN_FETCHED_AT   AS aladinFetchedAt,
+        NAVER_RES_STATUS    AS naverResStatus,
+        ALADIN_RES_STATUS   AS aladinResStatus,
+        STATUS_CD           AS statusCd
         FROM BOOK_ISBN_TEMP
         WHERE ISBN13 = #{isbn13}
     </select>
 
-    <!-- STEP 3-5) READY -> merge 대상 -->
+    <!-- STEP 3-5) READY -> merge 대상
+    -->
     <select id="selectTempIsbnForMerge" resultType="string">
         SELECT ISBN13
         FROM BOOK_ISBN_TEMP
         WHERE STATUS_CD = 1
+        AND GENRE_ID &gt; 0
+        AND ALADIN_IMAGE_BIG IS NOT NULL
+        AND LENGTH(TRIM(ALADIN_IMAGE_BIG)) &gt; 0
         ORDER BY COALESCE(ALADIN_FETCHED_AT, NAVER_FETCHED_AT, INFONARU_FETCHED_AT) ASC
         LIMIT #{limit}
     </select>
 
-    <!-- STEP 3-6) TEMP(READY) -> BOOK_ISBN 업서트 -->
+    <update id="rollbackTempReadyToPending">
+        UPDATE BOOK_ISBN_TEMP
+        SET STATUS_CD = 0
+        WHERE ISBN13 = #{isbn13}
+        AND STATUS_CD = 1
+    </update>
+
+
+
+    <!-- STEP 3-6) TEMP(READY) -> BOOK_ISBN 업서트
+    -->
     <insert id="upsertBookIsbnFromTemp">
         <![CDATA[
         INSERT INTO BOOK_ISBN
@@ -190,6 +205,9 @@
         FROM BOOK_ISBN_TEMP t
         WHERE t.ISBN13 = #{isbn13}
           AND t.STATUS_CD = 1
+          AND t.GENRE_ID > 0
+          AND t.ALADIN_IMAGE_BIG IS NOT NULL
+          AND LENGTH(TRIM(t.ALADIN_IMAGE_BIG)) > 0
         ON DUPLICATE KEY UPDATE
           BOOK_TITLE       = IF(BOOK_ISBN.DATA_HASH <> VALUES(DATA_HASH), VALUES(BOOK_TITLE),       BOOK_ISBN.BOOK_TITLE),
           AUTHORS          = IF(BOOK_ISBN.DATA_HASH <> VALUES(DATA_HASH), VALUES(AUTHORS),          BOOK_ISBN.AUTHORS),

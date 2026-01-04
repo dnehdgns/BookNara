@@ -1,7 +1,7 @@
 package com.booknara.booknaraPrj;
 
-import com.booknara.booknaraPrj.client.aladin.AladinProperties;
-import com.booknara.booknaraPrj.client.naver.NaverProperties;
+import com.booknara.booknaraPrj.bookAPI.client.aladin.AladinProperties;
+import com.booknara.booknaraPrj.bookAPI.client.naver.NaverProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
