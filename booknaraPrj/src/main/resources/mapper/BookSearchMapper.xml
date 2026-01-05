@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.booknara.booknaraPrj.bookSearch.mapper.BookSearchMapper">
+
+    <select id="searchBooks"
+            resultType="com.booknara.booknaraPrj.bookSearch.dto.BookSearchDTO">
+
+        SELECT
+        b.ISBN13           AS isbn13,
+        b.BOOK_TITLE       AS bookTitle,
+        b.AUTHORS          AS authors,
+        b.PUBLISHER        AS publisher,
+        b.PUBDATE          AS pubdate,
+        b.DESCRIPTION      AS description,
+        b.NAVER_IMAGE      AS naverImage,
+        b.ALADIN_IMAGE_BIG AS aladinImageBig,
+        b.EBOOK_YN         AS ebookYn,
+        b.GENRE_ID         AS genreId,
+        g.GENRE_NM         AS genreNm
+        FROM BOOK_ISBN b
+        JOIN GENRE g ON g.GENRE_ID = b.GENRE_ID
+        LEFT JOIN GENRE p ON p.GENRE_ID = g.PARENT_ID
+
+        <where>
+            <!-- mall 필터 -->
+            <if test="cond.mall != null and cond.mall != '' and cond.mall != 'ALL'">
+                AND g.MALL = #{cond.mall}
+            </if>
+
+            <!-- 검색어 -->
+            <if test="cond.keyword != null and cond.keyword != ''">
+                <choose>
+                    <when test="cond.field == 'TITLE'">
+                        AND b.BOOK_TITLE LIKE CONCAT('%', #{cond.keyword}, '%')
+                    </when>
+                    <when test="cond.field == 'AUTHOR'">
+                        AND b.AUTHORS LIKE CONCAT('%', #{cond.keyword}, '%')
+                    </when>
+                    <when test="cond.field == 'PUBLISHER'">
+                        AND b.PUBLISHER LIKE CONCAT('%', #{cond.keyword}, '%')
+                    </when>
+                    <otherwise>
+                        AND (
+                        b.BOOK_TITLE LIKE CONCAT('%', #{cond.keyword}, '%')
+                        OR b.AUTHORS LIKE CONCAT('%', #{cond.keyword}, '%')
+                        OR b.PUBLISHER LIKE CONCAT('%', #{cond.keyword}, '%')
+                        )
+                    </otherwise>
+                </choose>
+            </if>
+
+            <!-- ✅ 소분류: 0/음수 방어 -->
+            <if test="cond.genreId != null and cond.genreId > 0">
+                AND b.GENRE_ID = #{cond.genreId}
+            </if>
+
+            <!-- ✅ 대분류(소분류 미선택 시): genreId가 0/음수여도 대분류 분기 타도록 -->
+            <if test="(cond.genreId == null or cond.genreId &lt;= 0) and cond.parentGenreId != null">
+                <choose>
+                    <!-- 국내도서 -->
+                    <when test="cond.mall != null and cond.mall.trim() == '국내도서'">
+                        AND b.GENRE_ID IN (
+                        SELECT GENRE_ID
+                        FROM GENRE
+                        WHERE PARENT_ID = #{cond.parentGenreId}
+                        )
+                    </when>
+
+                    <!-- 외국도서 -->
+                    <when test="cond.mall != null and cond.mall.trim() == '외국도서'">
+                        <choose>
+                            <!-- ✅ 기타(<0): Top19 제외 -->
+                            <when test="cond.parentGenreId != null and cond.parentGenreId &lt; 0">
+                                AND NOT EXISTS (
+                                SELECT 1
+                                FROM (
+                                SELECT parent_id
+                                FROM (
+                                SELECT
+                                COALESCE(p2.GENRE_ID, g2.GENRE_ID) AS parent_id,
+                                COUNT(*) AS cnt
+                                FROM BOOK_ISBN b2
+                                JOIN GENRE g2 ON g2.GENRE_ID = b2.GENRE_ID
+                                LEFT JOIN GENRE p2 ON p2.GENRE_ID = g2.PARENT_ID
+                                WHERE g2.MALL = '외국도서'
+                                AND b2.EBOOK_YN = 'N'
+                                GROUP BY COALESCE(p2.GENRE_ID, g2.GENRE_ID)
+                                ) x
+                                ORDER BY x.cnt DESC, x.parent_id ASC
+                                LIMIT 19
+                                ) t
+                                WHERE t.parent_id = COALESCE(p.GENRE_ID, g.GENRE_ID)
+                                )
+                            </when>
+
+                            <!-- ✅ Top19 대분류 선택 -->
+                            <otherwise>
+                                AND COALESCE(p.GENRE_ID, g.GENRE_ID) = #{cond.parentGenreId}
+                            </otherwise>
+                        </choose>
+                    </when>
+
+                    <otherwise>
+                        <!-- mall이 ALL/NULL이면 대분류 필터 생략 -->
+                    </otherwise>
+                </choose>
+            </if>
+
+            <!-- 전자책 필터 -->
+            <if test="cond.ebookYn != null and cond.ebookYn != '' and cond.ebookYn != 'ALL'">
+                AND b.EBOOK_YN = #{cond.ebookYn}
+            </if>
+        </where>
+
+        <!-- 정렬 -->
+        <choose>
+            <when test="cond.sort == 'NEW'">
+                ORDER BY b.PUBDATE DESC
+            </when>
+            <when test="cond.sort == 'RATING'">
+                ORDER BY b.PUBDATE DESC
+            </when>
+            <when test="cond.sort == 'REVIEW'">
+                ORDER BY b.PUBDATE DESC
+            </when>
+            <otherwise>
+                ORDER BY b.PUBDATE DESC
+            </otherwise>
+        </choose>
+
+        LIMIT #{page.size} OFFSET #{page.offset}
+    </select>
+
+
+    <select id="countBooks" resultType="long">
+        SELECT COUNT(*)
+        FROM BOOK_ISBN b
+        JOIN GENRE g ON g.GENRE_ID = b.GENRE_ID
+        LEFT JOIN GENRE p ON p.GENRE_ID = g.PARENT_ID
+
+        <where>
+            <if test="cond.mall != null and cond.mall != '' and cond.mall != 'ALL'">
+                AND g.MALL = #{cond.mall}
+            </if>
+
+            <if test="cond.keyword != null and cond.keyword != ''">
+                <choose>
+                    <when test="cond.field == 'TITLE'">
+                        AND b.BOOK_TITLE LIKE CONCAT('%', #{cond.keyword}, '%')
+                    </when>
+                    <when test="cond.field == 'AUTHOR'">
+                        AND b.AUTHORS LIKE CONCAT('%', #{cond.keyword}, '%')
+                    </when>
+                    <when test="cond.field == 'PUBLISHER'">
+                        AND b.PUBLISHER LIKE CONCAT('%', #{cond.keyword}, '%')
+                    </when>
+                    <otherwise>
+                        AND (
+                        b.BOOK_TITLE LIKE CONCAT('%', #{cond.keyword}, '%')
+                        OR b.AUTHORS LIKE CONCAT('%', #{cond.keyword}, '%')
+                        OR b.PUBLISHER LIKE CONCAT('%', #{cond.keyword}, '%')
+                        )
+                    </otherwise>
+                </choose>
+            </if>
+
+            <!-- ✅ 소분류: 0/음수 방어 -->
+            <if test="cond.genreId != null and cond.genreId > 0">
+                AND b.GENRE_ID = #{cond.genreId}
+            </if>
+
+            <!-- ✅ 대분류(소분류 미선택 시): genreId가 0/음수여도 대분류 분기 타도록 -->
+            <if test="(cond.genreId == null or cond.genreId &lt;= 0) and cond.parentGenreId != null">
+                <choose>
+                    <when test="cond.mall != null and cond.mall.trim() == '국내도서'">
+                        AND b.GENRE_ID IN (
+                        SELECT GENRE_ID
+                        FROM GENRE
+                        WHERE PARENT_ID = #{cond.parentGenreId}
+                        )
+                    </when>
+
+                    <when test="cond.mall != null and cond.mall.trim() == '외국도서'">
+                        <choose>
+                            <!-- ✅ 기타(<0): Top19 제외 (searchBooks와 완전 동일) -->
+                            <when test="cond.parentGenreId != null and cond.parentGenreId &lt; 0">
+                                AND NOT EXISTS (
+                                SELECT 1
+                                FROM (
+                                SELECT parent_id
+                                FROM (
+                                SELECT
+                                COALESCE(p2.GENRE_ID, g2.GENRE_ID) AS parent_id,
+                                COUNT(*) AS cnt
+                                FROM BOOK_ISBN b2
+                                JOIN GENRE g2 ON g2.GENRE_ID = b2.GENRE_ID
+                                LEFT JOIN GENRE p2 ON p2.GENRE_ID = g2.PARENT_ID
+                                WHERE g2.MALL = '외국도서'
+                                GROUP BY COALESCE(p2.GENRE_ID, g2.GENRE_ID)
+                                ) x
+                                ORDER BY x.cnt DESC, x.parent_id ASC
+                                LIMIT 19
+                                ) t
+                                WHERE t.parent_id = COALESCE(p.GENRE_ID, g.GENRE_ID)
+                                )
+                            </when>
+
+                            <otherwise>
+                                AND COALESCE(p.GENRE_ID, g.GENRE_ID) = #{cond.parentGenreId}
+                            </otherwise>
+                        </choose>
+                    </when>
+                </choose>
+            </if>
+
+            <if test="cond.ebookYn != null and cond.ebookYn != '' and cond.ebookYn != 'ALL'">
+                AND b.EBOOK_YN = #{cond.ebookYn}
+            </if>
+
+        </where>
+    </select>
+
+</mapper>
