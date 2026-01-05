@@ -28,7 +28,13 @@ public class SecurityConfig {
                                 "/book/detail",
 
                                 // 정적 리소스
-                                "/css/**", "/js/**", "/images/**", "/favicon.ico"
+                                "/css/**", "/js/**", "/images/**", "/favicon.ico",
+
+                                "/ebook",
+                                "/ebook/*",
+                                "/ebook/epub/*",
+                                "/ebook/history/*",
+                                "/ebook/dict/*"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

@@ -1972,16 +1972,23 @@
       restoring = true;
       restoreDoneAt = 0;
 
+      console.log('restore2');
       try {
+      console.log('restore3');
+      console.log(book);
       await book.ready;
+      console.log('restore4');
       await ensureLocations();
+      console.log('restore5');
 
       if (href) {
+        console.log('href');
         try { await rendition.display(href); } catch {}
       }
       if (typeof pct === "number") {
         const cfi2 = book.locations.cfiFromPercentage(pct);
         try {
+          console.log('number');
           await rendition.display(cfi2);
           await new Promise(r => setTimeout(r, 200));
           await rendition.display(cfi2);
@@ -1990,10 +1997,16 @@
         } catch {}
       }
       if (cfi) {
+        console.log('cfi');
         try { await rendition.display(cfi); return; } catch {}
       }
       await rendition.display();
-      } finally {
+      } catch(e) {
+        console.log('err');
+        console.log(e);
+      }
+      finally {
+        console.log('final');
         restoreDoneAt = Date.now();
         setTimeout(() => {
           restoring = false;
@@ -2142,13 +2155,17 @@
           setTocOpen(false);
 
           const url = `/ebook/epub/${MY_EBOOK_ISBN}`;
+          console.log(url);
 
           const res = await fetch(url);
+          console.log(res);
           if (!res.ok) throw new Error("EPUB fetch failed: " + res.status);
 
           buf = await res.arrayBuffer();
 
+          console.log('buf : ', buf);
           book = ePub(buf);
+
           initRendition();
       }
     })();
