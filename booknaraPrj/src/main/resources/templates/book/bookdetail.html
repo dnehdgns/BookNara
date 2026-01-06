@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title th:text="${view.bookDetailDTO.bookTitle}">도서 상세</title>
+
+    <style>
+        :root{
+            --max: 1200px;
+            --text:#111;
+            --muted:#777;
+            --line:#e5e5e5;
+            --bg:#fff;
+            --soft:#f7f6f3;
+            --btn:#111;
+            --radius:14px;
+        }
+        body{
+            margin:0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background:var(--bg);
+            color:var(--text);
+        }
+        a{color:inherit;text-decoration:none}
+        .wrap{max-width:var(--max);margin:0 auto;padding:32px 20px 80px;}
+        /* layout */
+        .top{
+            display:grid;
+            grid-template-columns:420px 1fr;
+            gap:48px;
+            align-items:start;
+        }
+        @media(max-width:900px){
+            .top{grid-template-columns:1fr}
+        }
+
+        /* cover */
+        .cover img,.cover .fallback{
+            width:100%;
+            aspect-ratio:2/3;
+            border-radius:18px;
+            border:1px solid var(--line);
+            object-fit:cover;
+            background:#fff;
+        }
+        .fallback{
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            color:var(--muted);
+            font-weight:700;
+            letter-spacing:.08em;
+        }
+
+        /* info */
+        .title{font-size:28px;font-weight:800;margin:0 0 8px}
+        .sub{color:var(--muted);font-size:14px;margin-bottom:18px}
+        .rating{font-size:14px;color:#f59e0b;margin-bottom:16px}
+
+        .price{margin-bottom:20px}
+        .price del{color:#aaa;margin-right:8px}
+        .price strong{font-size:22px}
+
+        .btns{display:flex;gap:10px;margin-bottom:28px}
+        .btn{
+            flex:1;
+            padding:14px;
+            border-radius:999px;
+            border:1px solid var(--btn);
+            background:var(--btn);
+            color:#fff;
+            font-weight:700;
+            cursor:pointer;
+        }
+        .btn.secondary{
+            background:#fff;
+            color:var(--btn);
+        }
+
+        /* accordion */
+        .accordion{
+            border-top:1px solid var(--line);
+            margin-top:24px;
+        }
+        details{
+            border-bottom:1px solid var(--line);
+            padding:18px 0;
+        }
+        summary{
+            list-style:none;
+            cursor:pointer;
+            font-weight:700;
+            font-size:15px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+        }
+        summary::-webkit-details-marker{display:none}
+        summary::after{
+            content:"⌄";
+            font-size:16px;
+            color:#999;
+        }
+        details[open] summary::after{
+            content:"⌃";
+        }
+        .content{
+            margin-top:14px;
+            font-size:14px;
+            color:#333;
+            line-height:1.7;
+            white-space:pre-line;
+        }
+    </style>
+</head>
+
+<body>
+<div class="wrap">
+
+    <!-- TOP -->
+    <section class="top">
+
+        <!-- COVER (NAVER 1순위) -->
+        <div class="cover">
+            <th:block th:if="${view.bookDetailDTO.naverImage != null and !#strings.isEmpty(view.bookDetailDTO.naverImage)}">
+                <img th:src="${view.bookDetailDTO.naverImage}" alt="도서 표지"/>
+            </th:block>
+
+            <th:block th:if="${(view.bookDetailDTO.naverImage == null or #strings.isEmpty(view.bookDetailDTO.naverImage))
+                        and (view.bookDetailDTO.aladinImageBig != null and !#strings.isEmpty(view.bookDetailDTO.aladinImageBig))}">
+                <img th:src="${view.bookDetailDTO.aladinImageBig}" alt="도서 표지"/>
+            </th:block>
+
+            <th:block th:if="${(view.bookDetailDTO.naverImage == null or #strings.isEmpty(view.bookDetailDTO.naverImage))
+                        and (view.bookDetailDTO.aladinImageBig == null or #strings.isEmpty(view.bookDetailDTO.aladinImageBig))}">
+                <div class="fallback">NO IMAGE</div>
+            </th:block>
+        </div>
+
+        <!-- INFO -->
+        <div>
+            <h1 class="title" th:text="${view.bookDetailDTO.bookTitle}">도서명</h1>
+            <div class="sub">
+                <span th:text="${view.bookDetailDTO.authors}">저자</span> ·
+                <span th:text="${view.bookDetailDTO.publisher}">출판사</span> ·
+                <span th:text="${view.bookDetailDTO.pubdate}">출간일</span>
+            </div>
+
+            <div class="rating">★ ★ ★ ★ ☆ <span style="color:#999">(0)</span></div>
+
+            <!-- 버튼 -->
+            <div class="btns">
+                <button class="btn secondary">북마크</button>
+                <button class="btn">대여하기</button>
+            </div>
+
+            <!-- ACCORDION -->
+            <div class="accordion">
+
+                <details open>
+                    <summary>책 소개</summary>
+                    <div class="content"
+                         th:text="${view.bookDetailDTO.description != null ? view.bookDetailDTO.description : '설명이 없습니다.'}">
+                        책 소개
+                    </div>
+                </details>
+
+                <details>
+                    <summary>분류</summary>
+                    <div class="content">
+                        <div th:text="'장르: ' + ${view.bookDetailDTO.genreNm}"></div>
+                        <div th:text="'구분: ' + ${view.genrePath.mall}"></div>
+                    </div>
+                </details>
+
+                <details>
+                    <summary>ISBN</summary>
+                    <div class="content" th:text="${view.bookDetailDTO.isbn13}">ISBN</div>
+                </details>
+
+                <details>
+                    <summary>소장 현황</summary>
+                    <div class="content">
+                        총 소장: <b th:text="${view.inventory.totalCount}">0</b><br/>
+                        이용 가능: <b th:text="${view.inventory.availableCount}">0</b>
+                    </div>
+                </details>
+
+            </div>
+        </div>
+    </section>
+</div>
+</body>
+</html>

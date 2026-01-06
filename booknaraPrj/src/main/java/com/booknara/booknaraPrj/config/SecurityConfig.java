@@ -14,10 +14,25 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/test/**").permitAll()   // ✅ 테스트만 오픈
+                        .requestMatchers(
+                                "/test/**",
+
+                                //  도서 검색 화면/데이터
+                                "/book/search",
+                                "/book/search/list",
+
+                                //  장르/카테고리
+                                "/book/genres/**",
+
+                                //  도서 상세 함
+                                "/book/detail/**",
+
+                                // 정적 리소스
+                                "/css/**", "/js/**", "/images/**", "/favicon.ico"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
-                .formLogin(Customizer.withDefaults());         // 기본 로그인 유지
+                .formLogin(Customizer.withDefaults());
 
         return http.build();
     }
