@@ -72,7 +72,7 @@ public class BookSearchService {
 
         cond.setField(whitelistOrDefault(field, "ALL", "ALL", "TITLE", "AUTHOR", "PUBLISHER"));
         cond.setSort(whitelistOrDefault(sort, "NEW", "NEW", "RATING", "REVIEW"));
-        cond.setEbookYn(whitelistOrDefault(ebook, "ALL", "ALL", "ALL", "N"));
+        cond.setEbookYn(whitelistOrDefault(ebook, "ALL", "ALL", "Y", "N"));
 
         // ---------------------------------------------------------------------
         // 4) 카테고리 값 방어

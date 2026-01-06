@@ -25,7 +25,7 @@ public class SecurityConfig {
                                 "/book/genres/**",
 
                                 //  도서 상세 함
-                                "/book/detail",
+                                "/book/detail/**",
 
                                 // 정적 리소스
                                 "/css/**", "/js/**", "/images/**", "/favicon.ico"

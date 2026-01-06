@@ -22,7 +22,7 @@ public class BookSearchController {
      */
     @GetMapping("/search")
     public String searchPage() {
-        return "book/booksaerch"; // templates/book/booksearch.html
+        return "book/booksearch"; // templates/book/booksearch.html
     }
 
     /**

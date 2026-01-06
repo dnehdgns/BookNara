@@ -19,10 +19,17 @@
         b.ALADIN_IMAGE_BIG AS aladinImageBig,
         b.EBOOK_YN         AS ebookYn,
         b.GENRE_ID         AS genreId,
-        g.GENRE_NM         AS genreNm
+
+        CASE
+        WHEN LEFT(g.GENRE_NM, 1) = '_'
+        THEN SUBSTRING(g.GENRE_NM, 2)
+        ELSE g.GENRE_NM
+        END AS genreNm
+
         FROM BOOK_ISBN b
         JOIN GENRE g ON g.GENRE_ID = b.GENRE_ID
         LEFT JOIN GENRE p ON p.GENRE_ID = g.PARENT_ID
+
 
         <where>
             <!-- mall 필터 -->
