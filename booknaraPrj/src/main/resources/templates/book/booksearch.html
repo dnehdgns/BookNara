@@ -1,11 +1,16 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>도서 검색</title>
 
+
+
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Gamja+Flower&display=swap');
+
         :root{
             --page-max: 1440px;
             --content-max: 1280px;
@@ -225,6 +230,7 @@
             margin: 0;
             cursor:pointer;
             font-weight: 900;
+            font-size: 13px;
             color: var(--accent);
             max-width: 240px;
             overflow:hidden;
@@ -297,6 +303,47 @@
             display: block;
         }
 
+        /* 썸네일 위에 태그 붙이기 위해 기준점 */
+        .thumb { position: relative; }
+
+        /* 전자책 배지 */
+        /* 전자책 배지 - 원형 */
+        .badge-ebook {
+            /* 위치: 책 위쪽에 살짝 걸친 느낌 */
+            position: absolute;
+            right: 15px;      /* 오른쪽 여백 */
+            top: -4px;        /* 위쪽으로 살짝 튀어나오게 */
+
+            /* 모양: 세로로 긴 직사각형 */
+            width: 28px;      /* 너비는 좁게 */
+            height: 45px;     /* 높이는 길게 */
+
+            /* 하단만 둥글게 처리 (책갈피 모양) */
+            border-radius: 2px 2px 10px 10px;
+
+            /* 정렬 및 색상 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            background: #63BCD9;
+            color: #fff;      /* 글자색 흰색 추천 */
+
+            /* 텍스트 세로 쓰기 (선택사항) */
+            writing-mode: vertical-rl;
+            text-orientation: upright;
+
+            font-family: 'Gamja Flower', cursive;
+            font-weight: bold;
+            font-size: 26px;
+            letter-spacing: 1px;
+
+            /* 입체감 그림자 */
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+        }
+
+
+
         /* 카드 텍스트 영역: 280px로 고정하되, 카드가 더 작아지면 자동으로 줄어듦 */
         .info{
             width: 280px;
@@ -347,6 +394,7 @@
         .card:hover .hover-layer { opacity: 1; }
 
         .hover-meta {
+            text-align: right;
             font-size: 13px;
             color: #ffd36a;
             font-weight: 900;
@@ -629,21 +677,32 @@
         window.scrollTo({ top: y, behavior: "auto" });
     }
 
+    // ✅ 핵심: 카테고리/브레드크럼 클릭 시 검색 입력을 확실히 초기화
+    function resetSearchInputs({ resetField = false } = {}) {
+        state.keyword = null;
+        $keyword.value = "";
+
+        if (resetField) {
+            state.field = "ALL";
+            $field.value = "ALL";
+        }
+    }
+
     // ====== Breadcrumb ======
     function renderBreadcrumb() {
         const parts = [];
         parts.push(`
-          <a class="crumb-home" href="/" title="홈으로">
+          <a class="crumb-home" href="/book/search" title="홈으로">
             <span aria-hidden="true">🏠</span><span>홈</span>
           </a>
         `);
 
         if (state.parentName) {
-            parts.push(`<span class="crumb-sep">&gt;</span>`);
+            parts.push(`<span class="crumb-sep">&rsaquo;</span>`);
             parts.push(`<button class="crumb-link" type="button" data-crumb="parent">${esc(state.parentName)}</button>`);
         }
         if (state.childName) {
-            parts.push(`<span class="crumb-sep">&gt;</span>`);
+            parts.push(`<span class="crumb-sep">&rsaquo;</span>`);
             parts.push(`<button class="crumb-link" type="button" data-crumb="child">${esc(state.childName)}</button>`);
         }
 
@@ -653,12 +712,17 @@
             btn.addEventListener("click", () => {
                 const t = btn.getAttribute("data-crumb");
 
+                // ✅ breadcrumb도 카테고리 이동이므로 검색어 초기화
+                resetSearchInputs({ resetField: false }); // 필요하면 true로
+
                 if (t === "parent") {
                     state.page = 1;
-                    state.genreId = null;
+                    state.genreId = null;      // 소분류 해제
                     state.childName = null;
+
                     setView("CHILD");
                     clearActive($childList);
+
                     renderBreadcrumb();
                     load();
                 }
@@ -687,6 +751,9 @@
             if (g.genreNm === "외국도서") li.classList.add("foreign");
 
             li.addEventListener("click", async () => {
+                // ✅ 카테고리 이동 → 검색어 초기화
+                resetSearchInputs({ resetField: false }); // 원하면 true
+
                 setView("CHILD");
                 $selectedParentName.textContent = g.genreNm;
 
@@ -741,6 +808,9 @@
             li.textContent = g.genreNm;
 
             li.addEventListener("click", () => {
+                // ✅ 소분류 이동 → 검색어 초기화
+                resetSearchInputs({ resetField: false });
+
                 clearActive($childList);
                 li.classList.add("active");
 
@@ -779,6 +849,9 @@
             li.textContent = g.genreNm;
 
             li.addEventListener("click", () => {
+                // ✅ 외국도서 하위 선택 → 검색어 초기화
+                resetSearchInputs({ resetField: false });
+
                 clearActive($childList);
                 li.classList.add("active");
 
@@ -816,20 +889,23 @@
             const title = esc(it.bookTitle);
             const authors = esc(it.authors);
             const publisher = esc(it.publisher);
+            const isEbook = (it.ebookYn === "Y");
             const desc = esc(it.description || "도서 설명이 없습니다.");
 
             const rating = it.rating ?? "4.5";
             const reviewCnt = it.reviewCnt ?? 0;
 
             return `
-              <article class="card" data-isbn="${esc(it.isbn13)}">
-                  <div class="thumb">
+                  <article class="card" data-isbn="${esc(it.isbn13)}">
+                    <div class="thumb">
                       ${img ? `<img src="${esc(img)}" alt="${title}"/>` : ``}
+
+                      ${it.ebookYn === "Y" ? `<div class="badge-ebook">E</div>` : ``}
 
                       <div class="hover-layer">
                           <div>
-                              <div class="hover-meta">⭐ ${rating} (${reviewCnt})</div>
                               <div class="hover-desc">${desc}</div>
+                              <div class="hover-meta">⭐ ${rating} (${reviewCnt})</div>
                           </div>
                           <div class="hover-actions">
                               <button type="button">대여하기</button>
@@ -840,23 +916,24 @@
                   </div>
 
                   <div class="info">
-                      <div class="title">${title}</div>
-                      <div class="sub">${authors} ｜ ${publisher}</div>
-                  </div>
-              </article>
+                        <div class="title">${title}</div>
+                        <div class="sub">
+                            ${authors.replace(/\^/g, ' · ')} ｜ ${publisher}
+                        </div>
+                    </div>
+               </article>
             `;
         }).join("");
 
+        // ✅ 여기 문법 에러 있었음(주석이 끊겨있었음) → 정상 종료로 수정
         $grid.querySelectorAll(".card").forEach(card => {
             card.addEventListener("click", (e) => {
-                // hover 버튼 클릭은 상세 이동 막기
                 if (e.target.tagName === "BUTTON") return;
 
                 const isbn = card.getAttribute("data-isbn");
-                location.href = `/book/detail/${encodeURIComponent(isbn)}`; //
+                location.href = `/book/detail/${encodeURIComponent(isbn)}`;
             });
         });
-
     }
 
     function renderPager(page, totalPages) {
@@ -915,7 +992,6 @@
             renderPager(data.page || 1, data.totalPages || 1);
 
             scrollToTopOfResult();
-
         } catch (e) {
             console.error(e);
             $grid.innerHTML = `
@@ -947,7 +1023,14 @@
     $btnBackToParents.addEventListener("click", () => {
         setView("PARENT");
         state.childName = null;
+        state.parentName = null;    // ✅ 대분류로 돌아가면 breadcrumb도 홈만 남게
+        state.genreId = null;
+        state.parentGenreId = null;
+        state.mall = "ALL";
+
+        clearActive($childList);
         renderBreadcrumb();
+        load(); // ✅ 화면만 바꾸지 말고 목록도 "전체"로 갱신
     });
 
     $btn.addEventListener("click", () => {
@@ -974,6 +1057,9 @@
     });
 
     $btnAll.addEventListener("click", () => {
+        // ✅ 전체는 “초기화”니까 검색어도 같이 비우는 게 UX 좋음
+        resetSearchInputs({ resetField: false }); // 원하면 true
+
         state.mall = "ALL";
         state.parentGenreId = null;
         state.genreId = null;
@@ -1001,6 +1087,7 @@
         load();
     })();
 </script>
+
 
 </body>
 </html>
