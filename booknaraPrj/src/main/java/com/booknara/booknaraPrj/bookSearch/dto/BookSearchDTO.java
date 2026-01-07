@@ -19,6 +19,4 @@ public class BookSearchDTO {
 
     private Integer genreId;
     private String genreNm;
-
-
 }

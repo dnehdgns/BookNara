@@ -1,0 +1,46 @@
+package com.booknara.booknaraPrj.bookcart.controller;
+
+import com.booknara.booknaraPrj.bookcart.service.BookCartService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+
+@Controller
+@RequiredArgsConstructor
+@RequestMapping("/book/cart")
+public class BookCartController {
+
+    private final BookCartService service;
+
+    private String getUserId(Authentication auth) {
+        // 너희 로그인 방식에 맞춰 userId 꺼내기
+        return auth.getName();
+    }
+
+    @GetMapping
+    public String cartPage(Authentication auth, Model model) {
+        String userId = getUserId(auth);
+        model.addAttribute("items", service.list(userId));
+        return "bookcart/cart";
+    }
+
+    @PostMapping("/add")
+    @ResponseBody
+    public void add(@RequestParam String isbn13, Authentication auth) {
+        service.add(getUserId(auth), isbn13);
+    }
+
+    @PostMapping("/remove")
+    @ResponseBody
+    public void remove(@RequestParam Long cartId, Authentication auth) {
+        service.remove(getUserId(auth), cartId);
+    }
+
+    @PostMapping("/clear")
+    @ResponseBody
+    public void clear(Authentication auth) {
+        service.clear(getUserId(auth));
+    }
+}

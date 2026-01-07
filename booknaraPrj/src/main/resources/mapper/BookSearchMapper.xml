@@ -9,7 +9,13 @@
         FROM BOOK_ISBN b
         JOIN GENRE g ON g.GENRE_ID = b.GENRE_ID
         LEFT JOIN GENRE p ON p.GENRE_ID = g.PARENT_ID
+
+        <!-- 로그인 유저의 북마크 여부 -->
+        LEFT JOIN BOOKMARK bm
+        ON bm.ISBN13 = b.ISBN13
+        AND bm.USER_ID = #{userId}
     </sql>
+
 
     <sql id="BaseWhere">
         <where>
@@ -189,32 +195,47 @@
         CASE
         WHEN LEFT(g.GENRE_NM, 1) = '_' THEN SUBSTRING(g.GENRE_NM, 2)
         ELSE g.GENRE_NM
-        END AS genreNm
+        END AS genreNm,
+
+        <!-- userId가 null이면 null, 로그인 상태면 Y/N -->
+        CASE
+        WHEN #{userId} IS NULL THEN NULL
+        ELSE COALESCE(bm.BOOKMARK_YN, 'N')
+        END AS bookmarkedYn
+
         <include refid="BaseFrom"/>
         <include refid="BaseWhere"/>
 
         <choose>
-            <when test="cond.sort == 'NEW'">
-                ORDER BY b.PUBDATE DESC
-            </when>
-            <when test="cond.sort == 'RATING'">
-                ORDER BY b.PUBDATE DESC
-            </when>
-            <when test="cond.sort == 'REVIEW'">
-                ORDER BY b.PUBDATE DESC
-            </when>
-            <otherwise>
-                ORDER BY b.PUBDATE DESC
-            </otherwise>
+            <when test="cond.sort == 'NEW'">ORDER BY b.PUBDATE DESC</when>
+            <when test="cond.sort == 'RATING'">ORDER BY b.PUBDATE DESC</when>
+            <when test="cond.sort == 'REVIEW'">ORDER BY b.PUBDATE DESC</when>
+            <otherwise>ORDER BY b.PUBDATE DESC</otherwise>
         </choose>
 
         LIMIT #{page.size} OFFSET #{page.offset}
     </select>
+
 
     <select id="countBooks" resultType="long">
         SELECT COUNT(*)
         <include refid="BaseFrom"/>
         <include refid="BaseWhere"/>
     </select>
+
+
+
+
+    <sql id="BaseBookmarkJoin">
+        <if test="userId != null and userId != ''">
+            LEFT JOIN BOOKMARK bm
+            ON bm.ISBN13 = b.ISBN13
+            AND bm.USER_ID = #{userId}
+        </if>
+    </sql>
+
+
+
+
 
 </mapper>

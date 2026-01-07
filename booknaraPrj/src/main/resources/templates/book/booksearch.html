@@ -896,44 +896,42 @@
             const reviewCnt = it.reviewCnt ?? 0;
 
             return `
-                  <article class="card" data-isbn="${esc(it.isbn13)}">
-                    <div class="thumb">
-                      ${img ? `<img src="${esc(img)}" alt="${title}"/>` : ``}
+              <article class="card" data-isbn="${esc(it.isbn13)}">
+                <div class="thumb">
+                  ${img ? `<img src="${esc(img)}" alt="${title}"/>` : ``}
+                  ${it.ebookYn === "Y" ? `<div class="badge-ebook">E</div>` : ``}
 
-                      ${it.ebookYn === "Y" ? `<div class="badge-ebook">E</div>` : ``}
-
-                      <div class="hover-layer">
-                          <div>
-                              <div class="hover-desc">${desc}</div>
-                              <div class="hover-meta">⭐ ${rating} (${reviewCnt})</div>
-                          </div>
-                          <div class="hover-actions">
-                              <button type="button">대여하기</button>
-                              <button type="button">장바구니</button>
-                              <button type="button">북마크</button>
-                          </div>
-                      </div>
-                  </div>
-
-                  <div class="info">
-                        <div class="title">${title}</div>
-                        <div class="sub">
-                            ${authors.replace(/\^/g, ' · ')} ｜ ${publisher}
-                        </div>
+                  <div class="hover-layer">
+                    <div>
+                      <div class="hover-desc">${desc}</div>
+                      <div class="hover-meta">⭐ ${rating} (${reviewCnt})</div>
                     </div>
-               </article>
+                    <div class="hover-actions">
+                      <button type="button" class="btn-rent">대여하기</button>
+                      <button type="button" class="btn-cart">장바구니</button>
+                      <button type="button" class="btn-bookmark" data-bookmarked="false">북마크</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="info">
+                  <div class="title">${title}</div>
+                  <div class="sub">${authors.replace(/\^/g, ' · ')} ｜ ${publisher}</div>
+                </div>
+              </article>
             `;
+
         }).join("");
 
-        // ✅ 여기 문법 에러 있었음(주석이 끊겨있었음) → 정상 종료로 수정
         $grid.querySelectorAll(".card").forEach(card => {
             card.addEventListener("click", (e) => {
-                if (e.target.tagName === "BUTTON") return;
+                if (e.target.closest("button")) return;
 
                 const isbn = card.getAttribute("data-isbn");
                 location.href = `/book/detail/${encodeURIComponent(isbn)}`;
             });
         });
+
     }
 
     function renderPager(page, totalPages) {
@@ -1074,6 +1072,72 @@
         renderBreadcrumb();
         load();
     });
+
+    async function toggleBookmark(isbn13) {
+        try {
+            const res = await fetch(`/api/bookmarks/${encodeURIComponent(isbn13)}/toggle`, {
+                method: "POST",
+                headers: { "Accept": "application/json" }
+            });
+
+            // 로그인 필요(401/403) 또는 로그인 페이지로 리다이렉트(HTML)면 로그인으로
+            const ct = res.headers.get("content-type") || "";
+            if (res.status === 401 || res.status === 403 || ct.includes("text/html")) {
+                location.href = "/users/login";
+                return null;
+            }
+
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            return await res.json();
+
+        } catch (e) {
+            // 네트워크/기타 오류도 그냥 로그인으로 보낼지 선택 가능
+            console.error(e);
+            alert("처리 중 오류가 발생했습니다.");
+            return null;
+        }
+    }
+
+
+    function setBookmarkUI(btn, bookmarked) {
+        btn.dataset.bookmarked = bookmarked ? "true" : "false";
+        btn.textContent = bookmarked ? "북마크✓" : "북마크";
+
+        // 원하면 스타일도 바꿀 수 있음 (간단 예시)
+        if (bookmarked) {
+            btn.style.background = "rgba(255,255,255,0.2)";
+            btn.style.borderColor = "#ffd36a";
+        } else {
+            btn.style.background = "transparent";
+            btn.style.borderColor = "#fff";
+        }
+    }
+
+    // ✅ 이벤트 위임: 그리드 전체에 한 번만
+    $grid.addEventListener("click", async (e) => {
+        const btn = e.target.closest(".btn-bookmark");
+        if (!btn) return;
+
+        const card = e.target.closest(".card");
+        const isbn13 = card?.getAttribute("data-isbn");
+        if (!isbn13) return;
+
+        // 중복 클릭 방지
+        if (btn.disabled) return;
+        btn.disabled = true;
+
+        try {
+            const data = await toggleBookmark(isbn13);
+            if (!data) return; // 401 처리로 리턴됨
+            setBookmarkUI(btn, !!data.bookmarked);
+        } catch (err) {
+            console.error(err);
+            alert("북마크 처리 실패");
+        } finally {
+            btn.disabled = false;
+        }
+    });
+
 
     // ====== 최초 로드 ======
     (async () => {
