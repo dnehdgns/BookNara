@@ -78,6 +78,57 @@ document.addEventListener("DOMContentLoaded", () => {
     alarmMenuDot.classList.remove("alarm-menu-active");
     alarmMenu.style.display = "none";
   }
+
+  const alarmTabs = document.querySelector('.alarm-tabs');
+
+  let isDown = false;
+  let startX = 0;
+  let startScrollLeft = 0;
+  let moved = false;
+  let pointerId = null;
+
+  const MOVE_THRESHOLD = 10; // px: 이 이상 움직이면 '드래그'로 판단
+
+  alarmTabs.addEventListener('pointerdown', (e) => {
+    // 왼쪽 버튼만 (마우스)
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+    isDown = true;
+    moved = false;
+
+    // alarmTabs.classList.add('dragging');
+    // alarmTabs.setPointerCapture(e.pointerId);
+    pointerId = e.pointerId;
+
+    startX = e.clientX;
+    startScrollLeft = alarmTabs.scrollLeft;
+  });
+
+  alarmTabs.addEventListener('pointermove', (e) => {
+    if (!isDown) return;
+
+    const dx = e.clientX - startX;
+
+    // threshold 넘기 전까지는 클릭로 간주 (아무 것도 안함)
+    if (!moved && Math.abs(dx) < MOVE_THRESHOLD) return;
+
+    // 여기부터는 드래그 확정
+    moved = true;
+    alarmTabs.classList.add('dragging');
+    alarmTabs.setPointerCapture(e.pointerId);
+    e.preventDefault(); // 드래그 중 스크롤/선택 방지
+
+    alarmTabs.scrollLeft = startScrollLeft - dx;
+  });
+
+  alarmTabs.addEventListener('pointerup', () => endDrag());
+  alarmTabs.addEventListener('pointercancel', () => endDrag());
+  alarmTabs.addEventListener('pointerleave', () => endDrag());
+
+  function endDrag() {
+    isDown = false;
+    alarmTabs.classList.remove('dragging');
+  }
 });
 
 // targetType 매핑 객체
@@ -87,6 +138,13 @@ const NOTI_META = {
     tab: 'SYSTEM',
     icon: 'lend_expiration_noti',
     title: '반납 기한',
+    href: () => '/my/library' // 내 서재
+  },
+
+  PAST_DUE: {
+    tab: 'SYSTEM',
+    icon: 'past_due_noti',
+    title: '연체',
     href: () => '/my/library' // 내 서재
   },
 
@@ -137,6 +195,20 @@ const NOTI_META = {
     icon: 'inquiry_noti',
     title: '문의 답변',
     href: (n) => `/my/inquiries/${n.targetId}` // 문의 검색
+  },
+
+  DELIVERY_START: {
+    tab: 'DELIVERY',
+    icon: 'delivery_start_noti',
+    title: '배송 시작',
+    href: (n) => `/mypage/${n.targetId}` // 마이페이지 도서 상세
+  },
+
+  DELIVERY_ARRIVE: {
+    tab: 'DELIVERY',
+    icon: 'delivery_arrive_noti',
+    title: '배송 도착',
+    href: (n) => `/mypage/${n.targetId}` // 마이페이지 도서 상세
   }
 };
 

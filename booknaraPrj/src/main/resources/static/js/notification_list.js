@@ -53,12 +53,18 @@ function formatTime24h(createdAt) {
 // =========================
 // targetType 매핑
 // tab 값은 SYSTEM/COMMUNITY/EVENT/ADMIN/ALL
-// =========================
+// =========================  delinquency_noti
 const NOTI_META = {
   RENTAL_DUE: {
     tab: 'SYSTEM',
     icon: 'lend_expiration_noti',
     title: '반납 기한',
+    href: () => '/my/library'
+  },
+  PAST_DUE: {
+    tab: 'SYSTEM',
+    icon: 'past_due_noti',
+    title: '연체',
     href: () => '/my/library'
   },
   RESERVATION_AVAILABLE: {
@@ -102,6 +108,20 @@ const NOTI_META = {
     icon: 'inquiry_noti',
     title: '문의 답변',
     href: (n) => `/my/inquiries/${n.targetId}`
+  },
+
+  DELIVERY_START: {
+    tab: 'DELIVERY',
+    icon: 'delivery_start_noti',
+    title: '배송 시작',
+    href: (n) => `/mypage/${n.targetId}` // 마이페이지 도서 상세
+  },
+
+  DELIVERY_ARRIVE: {
+    tab: 'DELIVERY',
+    icon: 'delivery_arrive_noti',
+    title: '배송 도착',
+    href: (n) => `/mypage/${n.targetId}` // 마이페이지 도서 상세
   }
 };
 

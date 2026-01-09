@@ -339,6 +339,10 @@ gap:15px
   overflow-x: auto;         /* ⭐ 넘치면 가로 스크롤 */
 }
 
+.alarm-tabs.dragging {
+  cursor: grabbing;
+}
+
 /* 스크롤바 안 보이게 (선택) */
 .alarm-tabs::-webkit-scrollbar {
   display: none;
