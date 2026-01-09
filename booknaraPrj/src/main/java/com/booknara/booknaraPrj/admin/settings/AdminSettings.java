@@ -2,11 +2,14 @@ package com.booknara.booknaraPrj.admin.settings;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
-@Data
+@Getter
+@Setter
 @Table(name = "SETTINGS")
-public class Settings {
+public class AdminSettings {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long settingsId;
