@@ -65,9 +65,7 @@ public class EBookController {
         }
 
         // DB에서 회원의 현재 대여중인 전자책 정보 가져오기
-        //String user = (String) session.getAttribute("user_id");
-        //List<MyEBookItemDTO> e_list = service.findEBookList(user);
-        List<MyEBookItemDTO> e_list = service.findEBookList("SMY_TEST");
+        List<MyEBookItemDTO> e_list = service.findEBookList(userId);
         e_list.forEach(System.out::println);
 
         model.addAttribute("myEbookList", e_list);
@@ -77,9 +75,11 @@ public class EBookController {
 
     @ResponseBody
     @GetMapping("/ebook/epub/{isbn}")
-    public ResponseEntity<Resource> streamEpub(@PathVariable("isbn") String isbn) throws IOException {
+    public ResponseEntity<Resource> streamEpub(@PathVariable("isbn") String isbn,
+                                               Authentication auth) throws IOException {
         // 검증
-        boolean hasAccess = service.canReadBook("SMY_TEST", isbn);
+        String userId = auth.getName();
+        boolean hasAccess = service.canReadBook(userId, isbn);
         if (!hasAccess) {
             //throw new ResponseStatusException(HttpStatus.FORBIDDEN);
             System.out.println("실패");
