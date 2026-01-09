@@ -165,10 +165,10 @@
 
         /* 전자책 배지 */
         .badge-ebook {
-            position: absolute; right: 15px; top: -4px; width: 28px; height: 45px;
+            position: absolute; right: 15px; top: -4px; width: 35px; height: 55px;
             border-radius: 2px 2px 10px 10px; display: flex; align-items: center; justify-content: center;
             background: #63BCD9; color: #fff; writing-mode: vertical-rl; text-orientation: upright;
-            font-family: 'Gamja Flower', cursive; font-weight: bold; font-size: 26px;
+            font-family: 'Gamja Flower', cursive; font-weight: bold; font-size: 35px;
             letter-spacing: 1px; box-shadow: 0 3px 5px rgba(0,0,0,0.2);
         }
 
@@ -365,6 +365,30 @@
     const $toolbar    = document.querySelector(".toolbar");
 
     // ====== 유틸 ======
+    async function postForm(url, bodyObj) {
+        const body = new URLSearchParams(bodyObj).toString();
+
+        const res = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Accept": "application/json"
+            },
+            body
+        });
+
+        const ct = (res.headers.get("content-type") || "");
+
+        // ✅ 로그인 페이지로 리다이렉트 되었거나 HTML이면 => 로그인으로 보내기
+        if (res.status === 401 || res.status === 403 || ct.includes("text/html") || res.redirected) {
+            goLoginReturnHere();
+            return null;
+        }
+
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res;
+    }
+
     const esc = (s) => {
         if (s == null) return "";
         return String(s)
@@ -1002,12 +1026,8 @@
                 e.preventDefault();
                 e.stopPropagation();
 
-                const res = await fetch(`/book/circulation/reserve`, {
-                    method: "POST",
-                    headers: {"Content-Type":"application/x-www-form-urlencoded"},
-                    body: `isbn13=${encodeURIComponent(isbn13)}`
-                });
-                if (res.ok) load();
+                const res = await postForm("/book/circulation/reserve", { isbn13 });
+                if (res) load();
                 return;
             }
 
@@ -1016,12 +1036,8 @@
                 e.stopPropagation();
 
                 const rsvId = e.target.dataset.rsvId;
-                const res = await fetch(`/book/circulation/reserve/cancel`, {
-                    method: "POST",
-                    headers: {"Content-Type":"application/x-www-form-urlencoded"},
-                    body: `rsvId=${encodeURIComponent(rsvId)}`
-                });
-                if (res.ok) load();
+                const res = await postForm("/book/circulation/reserve/cancel", { rsvId });
+                if (res) load();
                 return;
             }
 
@@ -1030,16 +1046,14 @@
                 e.stopPropagation();
 
                 const lendId = e.target.dataset.lendId;
-                const res = await fetch(`/book/circulation/extend`, {
-                    method: "POST",
-                    headers: {"Content-Type":"application/x-www-form-urlencoded"},
-                    body: `lendId=${encodeURIComponent(lendId)}`
-                });
-                if (res.ok) load();
+                const res = await postForm("/book/circulation/extend", { lendId });
+                if (res) load();
                 return;
             }
         });
     }
+
+
 
     // ====== 초기화 ======
     (async function init() {
