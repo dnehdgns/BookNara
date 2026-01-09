@@ -51,7 +51,9 @@ public class SecurityConfig {
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
-                                "/favicon.ico"
+                                "/favicon.ico",
+                                "/error/*",
+                                "/404"
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST,
                                 "/users/find-id",
