@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title th:text="${view.bookDetailDTO.bookTitle}">도서 상세</title>
+<!--     <link rel="stylesheet" th:href="@{/css/main.css}">-->
+    <link rel="stylesheet" th:href="@{/css/footer.css}">
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Gamja+Flower&display=swap');
@@ -46,8 +48,6 @@
             justify-content:center;
             width: 28px;
             height: 28px;
-            border-radius: 8px;
-            border: 1px solid rgba(220,162,68,0.35);
             background:#fff;
             color: var(--accent);
             text-decoration:none;
@@ -92,7 +92,7 @@
         }
 
         .cover{
-            width: 100%;
+            width: 400px;
             aspect-ratio: 3/4;
             border-radius: var(--radius);
             border:1px solid var(--line);
@@ -152,6 +152,10 @@
             flex: 1 1 auto;
         }
 
+        .lend-info{
+            margin-top : 20px;
+        }
+
         /* 전자책/종이책 보기 버튼: cardinner 우측 상단(제목 라인) */
         .btn-pair{
             border: 1px solid rgba(220,162,68,0.55);
@@ -209,7 +213,7 @@
             align-items:baseline;
             gap:2px;
         }
-        .kpi .value .slash{ color:#bbb; font-weight: 900; margin: 0 2px; }
+        .kpi .value .slash{ color:black; font-weight: 900; margin: 0 2px; }
 
         /* buttons */
         .btn{
@@ -372,6 +376,7 @@
 </head>
 
 <body>
+<div th:replace="fragments/header :: header"></div>
 <div class="page">
     <div class="page-inner">
         <div class="wrap">
@@ -383,7 +388,8 @@
           <span th:each="c, st : ${view.genrePath.crumbs}">
             <span class="crumb-sep">›</span>
             <a th:href="@{/book/search(mall=${view.genrePath.mall}, parentGenreId=${c.genreId})}"
-               th:text="${c.genreNm}">장르</a>
+               th:text="${#strings.replace(c.genreNm, '_', '')}">장르</a>
+
           </span>
         </span>
             </div>
@@ -391,7 +397,6 @@
             <div class="card">
                 <div class="card-inner">
                     <div class="detail-grid">
-
                         <!-- 표지 -->
                         <div class="cover">
                             <div class="badge-ebook-ribbon"
@@ -409,21 +414,24 @@
                             <div class="title-row">
                                 <h1 class="title" th:text="${view.bookDetailDTO.bookTitle}">도서 제목</h1>
 
-                                <a class="btn-pair"
-                                   th:if="${view.pairYn == 'Y'}"
-                                   th:text="${view.pairLabel}"
-                                   th:href="@{/book/detail/{isbn13}(isbn13=${view.pairIsbn13})}">
-                                    전자책 보기
-                                </a>
                             </div>
 
                             <div class="meta">
-                                <span th:text="${view.bookDetailDTO.authors}">저자</span>
+                                <span th:text="${#strings.replace(view.bookDetailDTO.authors, '^', ' · ')}">저자</span>
                                 <span>｜</span>
-                                <span th:text="${view.bookDetailDTO.publisher}">출판사</span>
+                                <span th:text="${#strings.trim(#strings.replace(view.bookDetailDTO.publisher, '_', ''))}">출판사</span>
                                 <span>｜</span>
                                 <span th:text="${view.bookDetailDTO.pubdate}">출간일</span>
                             </div>
+
+                            <div class="lend-info">
+                            <a class="btn-pair"
+                               th:if="${view.pairYn == 'Y'}"
+                               th:text="${view.pairLabel}"
+                               th:href="@{/book/detail/{isbn13}(isbn13=${view.pairIsbn13})}">
+                                전자책 보기
+                            </a>
+
 
                             <!-- KPI (cardinner 중간쪽) -->
                             <div class="kpi" id="kpiBox">
@@ -451,7 +459,6 @@
                                         type="button"
                                         th:attr="data-isbn=${view.bookDetailDTO.isbn13}"
                                         aria-label="cart">
-                                    <span id="cartIcon" aria-hidden="true">🛒</span>
                                     <span id="cartText">장바구니 담기</span>
                                 </button>
 
@@ -460,6 +467,7 @@
                                         <button class="btn" disabled>상태 확인중…</button>
                                     </div>
                                 </div>
+                            </div>
                             </div>
 
                             <!-- ✅ 공유/북마크: 우측 하단 구석(작게) -->
@@ -647,11 +655,10 @@
 
     function renderCart(inCart){
         if(inCart){
-            cartIconEl.textContent = '✅';
-            cartTextEl.textContent = '장바구니 담김';
+            cartTextEl.textContent = '담김';
         }else{
-            cartIconEl.textContent = '🛒';
-            cartTextEl.textContent = '장바구니 담기';
+            cartTextEl.textContent = '장바구니';
+            alert("장바구니에 추가 되었습니다.")
         }
     }
 
@@ -852,6 +859,7 @@
     }
     loadReviewStatus();
 </script>
-
+<div th:replace="fragments/footer :: footer"></div>
 </body>
+
 </html>

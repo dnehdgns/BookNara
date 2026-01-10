@@ -1053,6 +1053,25 @@
         });
     }
 
+    function applyInitialKeywordFromUrl() {
+        const params = new URLSearchParams(location.search);
+        const kw = (params.get("keyword") || "").trim();
+        const field = (params.get("field") || "").trim();
+
+        if (kw) {
+            state.keyword = kw;
+            $keyword.value = kw;
+        }
+
+        if (field) {
+            state.field = field;
+            $field.value = field;
+        }
+    }
+
+
+
+
 
 
     // ====== 초기화 ======
@@ -1066,6 +1085,7 @@
         try { await loadParentGenres(); } catch (e) { console.error(e); }
 
         setView("PARENT");
+        applyInitialKeywordFromUrl();
         renderBreadcrumb();
         load();
     })();
