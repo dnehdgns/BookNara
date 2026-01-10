@@ -2,6 +2,7 @@ package com.booknara.booknaraPrj;
 
 import com.booknara.booknaraPrj.admin.users.UserService;
 import com.booknara.booknaraPrj.login_signup.User;
+import com.booknara.booknaraPrj.login_signup.UserService1;
 import com.booknara.booknaraPrj.mypage.mylibrary.MyLendDto;
 import com.booknara.booknaraPrj.mypage.mylibrary.MyLibraryService;
 import com.booknara.booknaraPrj.security.CustomUserDetails;
@@ -16,11 +17,11 @@ import java.util.*;
 @Controller
 public class MyPageController {
 
-    private final UserService userService;
+    private final UserService1 userService1;
     private final MyLibraryService myLibraryService;
 
-    public MyPageController(UserService userService, MyLibraryService myLibraryService) {
-        this.userService = userService;
+    public MyPageController(UserService1 userService1, MyLibraryService myLibraryService) {
+        this.userService1 = userService1;
         this.myLibraryService = myLibraryService;
     }
 
@@ -32,7 +33,7 @@ public class MyPageController {
         String userId = principal.getUserId();
 
         // 1) 유저 기본 정보
-        User user = userService.getUserById(userId);
+        User user = userService1.findByUserId(userId);
         model.addAttribute("user", user);
 
         // 2) 프로필

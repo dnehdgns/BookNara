@@ -1,15 +1,22 @@
-* {
+/* ===============================
+   My Bookmark / MyBookList 공용 CSS (통합본 / 복붙용 최종)
+   - 북마크/대여/예약이 같은 카드 UI로 보이게 통일
+   - HTML이 달라도 (.book-row / .book-list / img+p+span) 모두 커버
+   - 북마크 아이콘: 🔖 (이미지 없이)
+================================ */
+
+*{
     box-sizing: border-box;
     font-family: "Apple SD Gothic Neo", Arial, sans-serif;
 }
 
-body {
+body{
     margin: 0;
     background: #f5f5f5;
 }
 
-/* ===== 전체 박스 ===== */
-.library-wrap {
+/* ✅ 컨테이너 */
+.mypage-container{
     width: 900px;
     margin: 40px auto;
     background: #fff;
@@ -18,91 +25,190 @@ body {
 }
 
 /* ===== 상단 탭 ===== */
-.mypage-tabs {
+.mypage-tabs{
     display: flex;
     background: #e2a84a;
     border-radius: 6px;
     overflow: hidden;
 }
 
-.mypage-tab {
+.mypage-tab{
     flex: 1;
     text-align: center;
     padding: 12px 0;
     font-weight: bold;
     color: #333;
     cursor: pointer;
-    text-decoration: none;          /* ✅ 기본 밑줄 제거 */
+    text-decoration: none;
 }
 
-.mypage-tab:hover {
-    text-decoration: underline;     /* ✅ hover일 때만 밑줄 */
+.mypage-tab:hover{
+    text-decoration: underline;
     text-underline-offset: 6px;
 }
 
-.mypage-tab.active {
+.mypage-tab.active{
     background: #d6922f;
     color: #fff;
-    text-decoration: none;          /* ✅ active는 밑줄 제거 */
+    text-decoration: none;
 }
 
+/* ===== 섹션 ===== */
+.section{
+    margin-top: 18px;
+}
 
+.section-title{
+    font-weight: 800;
+    font-size: 18px;
+    margin: 14px 0;
+}
 
-/* ===== 책 리스트 ===== */
-.book-list {
-    display: flex;
+/* =========================================================
+   ✅ 목록 컨테이너 통합
+   - 북마크: .book-row
+   - 대여/예약: .book-list (div일 수도 있고 ul일 수도 있어서 둘 다 대응)
+========================================================= */
+.book-row,
+.book-list{
+    display: grid;
+    grid-template-columns: repeat(5, 150px);
     gap: 20px;
-    flex-wrap: wrap;
-    margin: 50px 0 28px;
+    margin: 18px 0 28px;
+    justify-content: center;
 }
 
-.book-card {
+/* (만약 book-list가 ul/li 구조면) 기본 ul 스타일 제거 */
+.book-list ul{
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: contents; /* ✅ ul이 그리드를 방해하지 않게 */
+}
+
+/* =========================================================
+   ✅ 카드 통합 (div.book-card / li.book-card 모두 동일)
+========================================================= */
+.book-card{
     width: 150px;
     text-align: center;
+    position: relative; /* 북마크 아이콘 absolute 기준 */
+    padding-bottom: 6px;
 }
 
-.book-card img {
+/* =========================================================
+   ✅ 이미지 통합
+   - 북마크: .book-img
+   - 대여/예약: 그냥 <img>만 있는 경우도 있어서 같이 잡음
+========================================================= */
+.book-link{
+    display: block;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.book-img,
+.book-card img{
     width: 100%;
     height: 200px;
     object-fit: cover;
-    border-radius: 4px;
     display: block;
-    margin-bottom: 8px;
-    cursor: pointer;
+    border-radius: 6px;
+    transition: transform 0.18s ease, filter 0.18s ease;
 }
 
-.book-card img:hover {
-    opacity: 0.9;
+/* ✅ hover 통일 (링크가 있든 없든 이미지가 동일하게 반응) */
+.book-link:hover .book-img,
+.book-card:hover img{
     transform: scale(1.02);
-    transition: all 0.2s ease;
+    filter: brightness(0.98);
 }
 
-
-
-
-.book-card p {
+/* =========================================================
+   ✅ 텍스트 통합
+   - 북마크: .book-title / .book-meta
+   - 대여/예약: <p>, <span> 구조도 같은 느낌으로
+========================================================= */
+.book-title,
+.book-card p{
     font-size: 14px;
-    margin: 0 0 6px;
+    margin: 8px 0 6px;
 }
 
-.book-card span {
+.book-meta,
+.book-card span{
     font-size: 12px;
     color: #666;
+    line-height: 1.3;
 }
-/* ===== 대여 상세 모달 ===== */
-.modal {
+
+/* =========================================================
+   ✅ 북마크 아이콘 (이미지 없이 🔖)
+========================================================= */
+.bookmark-ribbon{
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: auto;   /* ✅ 오른쪽으로 가는 규칙이 있으면 무력화 */
+    bottom: auto;
+
+    width: 40px;
+    height: 40px;
+
+    border: 0;
+    padding: 0;
+
+    background: #f2c94c;
+    border-radius: 50%;
+
+    cursor: pointer;
+    z-index: 50;
+
+    display: grid;
+    place-items: center;
+
+    transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+.bookmark-ribbon::before{
+    content: "🔖";
+    font-size: 18px;
+    line-height: 1;
+}
+
+.bookmark-ribbon:hover{
+    transform: scale(1.06);
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.25));
+}
+
+.bookmark-ribbon:focus-visible{
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.18);
+}
+
+/* ===== 공용: hidden / disabled ===== */
+.hidden{ display: none; }
+
+button:disabled{
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* =========================================================
+   모달 (유지 + 오타 수정)
+========================================================= */
+.modal{
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.45);
     display: flex;
     justify-content: center;
     z-index: 999;
-
-
 }
-.model.hidden { display: none; }
 
-.modal-content {
+.modal.hidden{ display: none; }
+
+.modal-content{
     background: #fff;
     width: 520px;
     border-radius: 14px;
@@ -110,7 +216,7 @@ body {
     position: relative;
 }
 
-.modal-close {
+.modal-close{
     position: absolute;
     right: 16px;
     top: 12px;
@@ -118,24 +224,24 @@ body {
     cursor: pointer;
 }
 
-.modal-body {
+.modal-body{
     display: flex;
     gap: 20px;
 }
 
-.modal-body img {
+.modal-body img{
     width: 150px;
     height: 220px;
     object-fit: cover;
 }
 
-.modal-btns {
+.modal-btns{
     display: flex;
     gap: 10px;
     margin-top: 12px;
 }
 
-.modal-btns button {
+.modal-btns button{
     flex: 1;
     padding: 10px;
     border: none;
@@ -143,12 +249,11 @@ body {
     cursor: pointer;
 }
 
-.btn-orange { background: #f2c94c; }
-.btn-blue { background: #56ccf2; }
+.btn-orange{ background: #f2c94c; }
+.btn-blue{ background: #56ccf2; }
 
-
-/* ===== 대여 기간 진행바 ===== */
-.rent-progress {
+/* 진행바 */
+.rent-progress{
     width: 100%;
     height: 8px;
     background: #eee;
@@ -156,7 +261,7 @@ body {
     margin: 10px 0;
 }
 
-.rent-bar {
+.rent-bar{
     height: 100%;
     width: 0%;
     background: #6fcf97;
@@ -164,21 +269,81 @@ body {
     transition: width 0.3s;
 }
 
-.rent-bar.overdue {
-    background: #eb5757;
-}
+.rent-bar.overdue{ background: #eb5757; }
 
-.overdue-text {
+.overdue-text{
     color: #eb5757;
     font-size: 13px;
     margin-bottom: 8px;
 }
-
-.hidden {
-    display: none;
+/* ===== 예약 헤더(사진처럼) ===== */
+.reserve-header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+    gap: 12px;
 }
 
-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+.reserve-notice{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #444;
+}
+
+.notice-dot{
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #f2c94c;
+    display: inline-block;
+}
+
+.empty-text{
+    padding: 30px 0;
+    color: #666;
+}
+
+/* 예약 취소 버튼 */
+.reserve-cancel-btn{
+    margin-top: 10px;
+    width: 100%;
+    height: 34px;
+    border: 0;
+    border-radius: 6px;
+    background: #f2c94c;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.reserve-cancel-btn:hover{
+    filter: brightness(0.97);
+}
+
+
+
+
+/* =========================================================
+   반응형
+========================================================= */
+@media (max-width: 920px){
+    .mypage-container{ width: 94%; }
+    .book-row,
+    .book-list{
+        grid-template-columns: repeat(4, 150px);
+    }
+}
+@media (max-width: 760px){
+    .book-row,
+    .book-list{
+        grid-template-columns: repeat(3, 150px);
+    }
+}
+@media (max-width: 560px){
+    .book-row,
+    .book-list{
+        grid-template-columns: repeat(2, 150px);
+    }
 }

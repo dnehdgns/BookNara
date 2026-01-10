@@ -195,4 +195,11 @@ public class UserService1 {
 
         return userId;
     }
+
+    //mypage에서 로그인정보 조회하기위해 추가
+    @Transactional(readOnly = true)
+    public User findByUserId(String userId) {
+        return userMapper.findByUserId(userId);
+    }
+
 }
