@@ -17,9 +17,21 @@ public interface BookCartMapper {
 
     int deleteAll(@Param("userId") String userId);
 
-    int deleteByIsbn(@Param("userId") String userId, @Param("isbn13") String isbn13);
+    int deleteByIsbn(@Param("userId") String userId,
+                     @Param("isbn13") String isbn13);
 
     List<BookCartDTO> selectList(@Param("userId") String userId);
 
+    // 장바구니 담긴 권수
+    int countMyCart(@Param("userId") String userId);
+
+    // 현재 대여중 권수
+    int countMyActiveLends(@Param("userId") String userId);
+
+    // 최대 대여 가능 권수 (SETTINGS)
+    Integer selectMaxLendCount();
+
+    //장바구니 담김 여부
+    int existsByIsbn(String userId, String isbn13);
 
 }

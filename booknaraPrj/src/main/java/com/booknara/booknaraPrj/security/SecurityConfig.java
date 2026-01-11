@@ -5,6 +5,7 @@ import com.booknara.booknaraPrj.security.oauth.CustomOAuth2UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -25,49 +26,53 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
-
-
         http
                 .csrf(csrf -> csrf.disable())
 
-
-
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.GET, "/book/review/permission").permitAll()
                         .requestMatchers(
-                                "/home",                 // 메인(비로그인 허용이면)
+                                "/home",
                                 "/users/login",
                                 "/users/signup",
                                 "/users/signup-extra",
                                 "/users/check-id",
                                 "/users/check-profile",
                                 "/users/social/**",
+
                                 "/book/search",
                                 "/book/search/list",
-                                "/api/bookmarks/**",
                                 "/book/detail/**",
                                 "/book/genres/**",
+
                                 "/book/reviewstatus/**",
                                 "/book/circulation/status",
+
+                                "/api/bookmarks/**",
+                                "/api/users/**",
+
                                 "/oauth2/**",
                                 "/login/oauth2/**",
-                                "/api/users/**",
+
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
                                 "/favicon.ico"
                         ).permitAll()
+
                         .anyRequest().authenticated()
                 )
 
                 .formLogin(form -> form
-                        .loginPage("/users/login")        // ⭐ 로그인 페이지
-                        .loginProcessingUrl("/users/login") // ⭐ POST 로그인 처리
-                        .usernameParameter("userId")     // ⭐ USER_ID
-                        .passwordParameter("password")   // ⭐ PASSWORD
+                        .loginPage("/users/login")
+                        .loginProcessingUrl("/users/login")
+                        .usernameParameter("userId")
+                        .passwordParameter("password")
                         .successHandler(loginSuccessHandler)
                         .failureUrl("/users/login?error")
                         .permitAll()
                 )
+
                 .oauth2Login(oauth -> oauth
                         .loginPage("/users/login")
                         .userInfoEndpoint(userInfo ->
@@ -75,7 +80,6 @@ public class SecurityConfig {
                         )
                         .successHandler(customOAuth2SuccessHandler)
                 )
-
 
                 .logout(logout -> logout
                         .logoutUrl("/logout")
@@ -97,4 +101,3 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 }
-

@@ -840,24 +840,51 @@
             });
 
             const ct = (res.headers.get("content-type") || "");
+
+            // 로그인 체크
             if (res.status === 401 || res.status === 403 || ct.includes("text/html")) {
                 goLoginReturnHere();
-                return { ok: false, needLogin: true };
+                return { needLogin: true };
             }
 
             if (!res.ok) throw new Error("HTTP " + res.status);
 
-            if (ct.includes("application/json")) {
-                const data = await res.json();
-                return { ok: true, data };
-            }
             return { ok: true };
         } catch (e) {
             console.error(e);
-            alert("장바구니 처리 중 오류가 발생했습니다.");
-            return { ok: false, error: e };
+            alert("장바구니 담기 중 오류가 발생했습니다.");
+            return { ok: false };
         }
     }
+
+    // [토글 API를 사용하여 추가/삭제를 한 번에 처리
+    async function toggleCart(isbn13) {
+        try {
+            // 컨트롤러의 @PostMapping("/{isbn13}/toggle") 호출
+            const res = await fetch(`/book/cart/${encodeURIComponent(isbn13)}/toggle`, {
+                method: "POST",
+                headers: { "Accept": "application/json" }
+            });
+
+            const ct = (res.headers.get("content-type") || "");
+
+            // 로그인 안 된 상태면 리다이렉트 처리
+            if (res.status === 401 || res.status === 403 || ct.includes("text/html")) {
+                goLoginReturnHere();
+                return { needLogin: true };
+            }
+
+            if (!res.ok) throw new Error("HTTP " + res.status);
+
+            // 결과: { "inCart": true } 또는 { "inCart": false }
+            return await res.json();
+        } catch (e) {
+            console.error(e);
+            alert("장바구니 처리 중 오류가 발생했습니다.");
+            return null;
+        }
+    }
+
 
     // ====== 대여 버튼 ======
     function buildRentButton(it) {
@@ -985,17 +1012,20 @@
             if (btnCart) {
                 e.preventDefault();
                 e.stopPropagation();
+
                 if (btnCart.disabled) return;
                 btnCart.disabled = true;
 
                 try {
-                    const inCart = (btnCart.dataset.incart === "true");
-                    if (!inCart) {
-                        const result = await addToCart(isbn13);
-                        if (result?.needLogin) return;
-                        setCartUI(btnCart, true);
-                    } else {
-                        location.href = "/book/cart";
+                    // 1. 토글 API 호출 (추가면 삭제되고, 삭제면 추가됨)
+                    const result = await toggleCart(isbn13);
+
+                    // 2. 로그인 필요시 중단
+                    if (result?.needLogin) return;
+
+                    // 3. 서버 응답(inCart)에 따라 버튼 UI 즉시 업데이트
+                    if (result) {
+                        setCartUI(btnCart, result.inCart);
                     }
                 } finally {
                     btnCart.disabled = false;

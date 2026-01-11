@@ -4,862 +4,1039 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title th:text="${view.bookDetailDTO.bookTitle}">도서 상세</title>
-<!--     <link rel="stylesheet" th:href="@{/css/main.css}">-->
     <link rel="stylesheet" th:href="@{/css/footer.css}">
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Gamja+Flower&display=swap');
 
+        /* =========================================
+           1. 공통 변수 및 레이아웃
+           ========================================= */
         :root{
-            --page-max: 1920px;
-            --layout-max: 1440px;
-            --content-max: 1280px;
-
-            --radius: 12px;
-            --gap: 18px;
+            --page-max: 1440px;      /* 전체 페이지 폭 */
+            --content-max: 1280px;   /* 기본 컨텐츠 폭 */
+            --inner-max: 1120px;     /* 내부 컨텐츠 폭(도서소개/리뷰/상단영역 공통) */
+            --gap: 24px;
+            --radius: 10px;
 
             --bg: #fff;
             --text: #111;
             --muted: #666;
+            --light-bg: #f9f9f9;
 
             --accent: #DCA244;
-            --line: #e8e8e8;
+            --line: #e5e5e5;
+            --shadow-soft: 0 4px 12px rgba(0,0,0,0.03);
 
-            --shadow: 0 10px 22px rgba(0,0,0,0.08);
-            --shadow-soft: 0 8px 16px rgba(0,0,0,0.06);
+            /* ✅ 오른쪽(KPI/토글/버튼 묶음)만 아래로 내리는 오프셋 */
+            --purchase-offset: 170px; /* 80~180 추천. 스샷처럼 맞추려면 여기 숫자만 조절 */
         }
 
-        *{ box-sizing:border-box; }
-        body{
-            margin:0;
-            font-family: Arial, sans-serif;
-            background: var(--bg);
-            color: var(--text);
+        body { margin:0; font-family: Arial, sans-serif; background: #fff; }
+        .wrap { max-width: var(--page-max); margin: 0 auto; padding: 24px 16px; }
+
+        .wrap-inner{
+            width: min(var(--content-max), 100%);
+            margin: 0 auto;
+            display: block;
         }
 
-        .page{ max-width: var(--page-max); margin: 0 auto; background: var(--bg); }
-        .page-inner{ width: min(var(--layout-max), 100%); margin: 0 auto; padding: 24px 16px; }
-        .wrap{ width: min(var(--content-max), 100%); margin: 0 auto; }
+        .center {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
 
-        /* breadcrumb */
-        .crumb-home{
-            display:inline-flex;
-            align-items:center;
-            justify-content:center;
-            width: 28px;
-            height: 28px;
+        /* ✅ 도서소개/리뷰/상단영역 모두에 적용할 "내부 컨텐츠" 폭 */
+        .section-inner{
+            width: min(var(--inner-max), 100%);
+            margin: 0 auto;
+        }
+
+        /* =========================================
+           2. Crumbbar
+           ========================================= */
+        .crumbbar {
+            margin: 0 0 30px;
             background:#fff;
-            color: var(--accent);
-            text-decoration:none;
-            font-weight: 900;
-            line-height: 1;
-            user-select:none;
-        }
-        .crumb-home:hover{ background:#fff7e6; box-shadow: 0 6px 14px rgba(0,0,0,0.06); }
-
-        .crumbbar{
-            background:#fff;
-            border:1px solid var(--accent);
+            border: 1px solid var(--accent);
             border-radius: var(--radius);
-            padding: 12px 14px;
-            margin-bottom: 14px;
+            padding: 12px 16px;
             display:flex;
+            justify-content: space-between;
             align-items:center;
-            gap: 8px;
-            flex-wrap:wrap;
-            font-size: 13px;
-            color: var(--muted);
-            font-weight: 800;
+            gap: 12px;
+            flex-wrap: wrap;
         }
-        .crumbbar a{ color: var(--accent); text-decoration:none; font-weight: 900; }
-        .crumbbar a:hover{ text-decoration: underline; }
-        .crumb-sep{ color:#bbb; font-weight: 900; }
+        .crumb-left { display:flex; align-items:center; gap: 8px; flex-wrap: wrap; min-width: 0; }
 
-        .card{
-            background:#fff;
-            border:1px solid var(--accent);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            overflow:hidden;
+        .crumb-home, .crumb-sep, .crumb-link, .crumb-current {
+            font-weight: 900;
+            font-size: 14px;
+            color: var(--accent);
         }
-        .card-inner{ padding: 18px; }
 
-        .detail-grid{
-            display:grid;
-            grid-template-columns: minmax(280px, 32%) 1fr;
-            gap: 22px;
+        .crumb-home {
+            display:inline-flex; align-items:center; gap:6px;
+            text-decoration: none; cursor:pointer;
+        }
+
+        .crumb-link {
+            border: none; background: transparent; padding: 0; margin: 0;
+            cursor:pointer;
+            text-decoration: none;
+        }
+        .crumb-link:hover { text-decoration: underline; }
+        .crumb-current { cursor: default; text-decoration: none; }
+
+        /* =========================================
+           3. 상단 상세 영역(표지+우측 정보)
+           ========================================= */
+
+        /* ✅ 상단도 도서소개/리뷰처럼 "내부만" 줄이고 구분선은 유지 */
+        .detail-section{
+            border-bottom: 1px solid var(--line);
+            padding-bottom: 40px;
+            margin-bottom: 40px;
+        }
+
+        .detail-container {
+            display: grid;
+            grid-template-columns: 480px 1fr;
+            gap: 60px;
             align-items: start;
         }
 
+        /* 표지 이미지 */
+        .cover-area { position: relative; }
         .cover{
-            width: 400px;
-            aspect-ratio: 3/4;
+            width: 100%;
+            aspect-ratio: 1 / 1.45;
             border-radius: var(--radius);
-            border:1px solid var(--line);
+            border: 1px solid var(--line);
             overflow:hidden;
-            background:#fafafa;
+            background: var(--light-bg);
             display:flex;
             align-items:center;
             justify-content:center;
-            position: relative;
             box-shadow: var(--shadow-soft);
         }
-        .cover img{ width:100%; height:100%; object-fit:cover; display:block; }
 
-        /* ⚠️ 요청: badge-ebook CSS는 바꾸지 말기 */
+        /* ✅ 이미지 호버 효과 제거 */
+        .cover img{
+            width:100%;
+            height:100%;
+            object-fit:cover;
+            display:block;
+            transition: none;
+            transform: none;
+        }
+
         .badge-ebook-ribbon{
-            position: absolute;
-            right: 16px;
-            top: -8px;
-            width:  50px;
-            height: 80px;
+            position: absolute; right: 20px; top: -8px; width: 55px; height: 85px;
             border-radius: 4px 4px 12px 12px;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            background:#63BCD9;
-            color:#fff;
+            display:flex; align-items:center; justify-content:center;
+            background:#63BCD9; color:#fff;
             font-family: 'Gamja Flower', cursive;
-            font-weight: 900;
-            font-size: 50px;
+            font-weight: 900; font-size: 50px;
             letter-spacing: 1px;
-            writing-mode: vertical-rl;
-            text-orientation: upright;
+            writing-mode: vertical-rl; text-orientation: upright;
             box-shadow: 0 8px 14px rgba(0,0,0,0.20);
             border:1px solid rgba(255,255,255,0.25);
             z-index: 2;
             user-select: none;
         }
 
-        /* ✅ 우측 패널: KPI는 중간, pair 버튼은 우측 상단, 작은 버튼들은 우측 하단 */
+        /* 우측 정보 패널 */
         .info-pane{
+            display: flex;
+            flex-direction: column;
+            height: auto;
+            min-height: 0;
+        }
+
+        .header-section { border-bottom: 1px solid var(--line); padding-bottom: 24px; margin-bottom: 28px; }
+        .title{ font-size: 32px; font-weight: 800; line-height: 1.3; margin: 0 0 16px 0; letter-spacing: -0.5px; word-break: keep-all; }
+        .meta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; color: var(--muted); font-size: 15px; }
+        .meta-divider { width: 1px; height: 12px; background: #ddd; display: inline-block; }
+
+        /* ✅ 오른쪽 KPI/토글/버튼 묶음만 아래로 내리기 */
+        .purchase-box{
+            margin-top: var(--purchase-offset);
+        }
+
+        /* KPI (Status Bar) */
+        .status-bar {
+            background: var(--light-bg);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 24px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .status-item { text-align: center; flex: 1; }
+        .status-item:not(:last-child) { border-right: 1px solid #ddd; }
+        .status-label { font-size: 14px; color: var(--muted); margin-bottom: 8px; font-weight: 600; }
+        .status-value { font-size: 22px; font-weight: 800; color: var(--text); }
+        .status-value .total { font-size: 16px; color: #999; font-weight: 500; }
+
+        /* 포맷 토글 */
+        .format-group { display: flex; gap: 14px; margin-bottom: 14px; }
+        .format-item {
+            flex: 1;
+            padding: 14px;
+            border: 1px solid #ddd;
+            border-radius: var(--radius);
+            background: #fff;
+            color: var(--muted);
+            text-align: center;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
             position: relative;
-            min-height: 100%;
-            padding-bottom: 54px; /* 우측 하단 작은 버튼 자리 확보 */
         }
+        .format-item.active { border: 2px solid var(--accent); color: var(--accent); background: #fff; z-index: 1; pointer-events: none; box-shadow: 0 4px 12px rgba(220, 162, 68, 0.1); }
+        .format-item:not(.active):not(.disabled):hover { background: #fafafa; border-color: #ccc; color: var(--text); }
+        .format-item.disabled { background: #f9f9f9; color: #ccc; border-color: #eee; cursor: default; pointer-events: none; }
+        .check-icon { font-size: 1.1em; }
 
-        .title-row{
-            display:flex;
-            align-items:flex-start;
-            gap: 10px;
-        }
-        .title{
-            font-size: 24px;
-            font-weight: 900;
-            line-height: 1.25;
-            margin: 0;
-            letter-spacing: -0.2px;
-            flex: 1 1 auto;
-        }
+        /* 버튼 영역 */
+        .action-area { margin-top: 0; display: flex; flex-direction: column; gap: 14px; }
+        .main-buttons { display: grid; grid-template-columns: 1fr 2fr; gap: 14px; height: 56px; }
+        #rentActions { display: contents; }
 
-        .lend-info{
-            margin-top : 20px;
-        }
-
-        /* 전자책/종이책 보기 버튼: cardinner 우측 상단(제목 라인) */
-        .btn-pair{
-            border: 1px solid rgba(220,162,68,0.55);
-            background:#fff;
-            color: var(--accent);
-            border-radius: 999px;
-            padding: 10px 12px;
+        .btn {
+            width: 100%;
+            height: 100%;
+            border: 1px solid var(--accent);
+            background: #fff;
+            color: var(--text);
+            border-radius: 8px;
+            font-size: 17px;
+            font-weight: 800;
             cursor: pointer;
-            font-weight: 900;
-            display:inline-flex;
-            align-items:center;
-            justify-content:center;
-            gap:8px;
-            white-space: nowrap;
-            min-height: 40px;
-            text-decoration:none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
         }
-        .btn-pair:hover{
-            background:#fff7e6;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+        .btn:hover { filter: brightness(0.98); }
+        .btn-primary, .btn-addcart, .btn-rsv, .btn-extend { background: var(--accent); color: #fff; box-shadow: 0 4px 10px rgba(220, 162, 68, 0.2); }
+        .btn-primary:hover, .btn-addcart:hover, .btn-rsv:hover { background: #c89035; transform: translateY(-1px); }
+        .btn:disabled { background: #f0f0f0; border-color: #ddd; color: #aaa; cursor: not-allowed; box-shadow: none; }
+
+        /* =========================
+   Share / Bookmark buttons
+   ========================= */
+        .sub-buttons{
+            display:flex;
+            justify-content:flex-end;
+            gap:10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
         }
 
-        .meta{
+        /* 기존 btn-text를 "pill button"으로 업그레이드 */
+        .btn-text{
+            background:#fff;
+            border: 1px solid var(--line);
             color: var(--muted);
             font-size: 14px;
-            display:flex;
-            flex-wrap:wrap;
-            gap: 8px 10px;
             font-weight: 800;
-            margin: 10px 0 14px;
-        }
-
-        .kpi{
-            display:grid;
-            grid-template-columns: repeat(2, minmax(0,1fr));
-            gap: 12px;
-            width: 100%;
-            margin: 16px 0; /* ✅ cardinner 중간 느낌 */
-        }
-        .kpi .item{
-            border:1px solid var(--line);
-            border-radius: var(--radius);
-            padding: 12px 14px;
-            background:#fff;
-            min-height: 74px;
-            display:flex;
-            flex-direction:column;
-            justify-content:center;
-        }
-        .kpi .label{ color: var(--muted); font-size: 12px; font-weight: 900; margin-bottom: 6px; }
-        .kpi .value{
-            font-size: 20px;
-            font-weight: 900;
-            display:flex;
-            align-items:baseline;
-            gap:2px;
-        }
-        .kpi .value .slash{ color:black; font-weight: 900; margin: 0 2px; }
-
-        /* buttons */
-        .btn{
-            border: 1px solid var(--accent);
-            background:#fff;
-            color: var(--text);
-            border-radius: 999px;
-            padding: 11px 14px;
-            cursor: pointer;
-            font-weight: 900;
             display:inline-flex;
             align-items:center;
-            justify-content:center;
             gap:8px;
-            transition: transform .06s ease, background .15s ease, box-shadow .15s ease;
-            white-space: nowrap;
-            min-height: 44px;
-            text-decoration:none;
-        }
-        .btn:hover{ background:#fff7e6; box-shadow: 0 8px 16px rgba(0,0,0,0.08); }
-        .btn:active{ transform: translateY(1px); }
-        .btn[disabled]{ opacity:.55; cursor:not-allowed; box-shadow:none; }
-        .btn-primary{ background: var(--accent); color:#fff; border-color: var(--accent); }
-        .btn-primary:hover{ background: #c89035; }
-
-        .chip{
-            font-size:12px;
-            padding:4px 10px;
-            border-radius:999px;
-            border:1px solid var(--line);
-            color: var(--muted);
-            background:#fff;
-            font-weight: 900;
-        }
-
-        /* ✅ 장바구니 + 대여하기(대여/예약/연장) = 같은 라인 */
-        .main-actions{
-            display:grid;
-            grid-template-columns: 1fr 1.4fr;
-            gap: 10px;
-            align-items: stretch;
-            margin-top: 10px;
-        }
-        .main-actions > *{ width:100%; }
-
-        #rentActions{ display:flex; gap: 10px; width: 100%; }
-        #rentActions .btn{ flex: 1 1 0; width: 100%; }
-
-        #rentActions .btn-addcart,
-        #rentActions .btn-rsv,
-        #rentActions .btn-extend{
-            background: var(--accent);
-            color:#fff;
-            border-color: var(--accent);
-        }
-        #rentActions .btn-addcart:hover,
-        #rentActions .btn-rsv:hover,
-        #rentActions .btn-extend:hover{ background:#c89035; }
-
-        .rent-hint{
-            margin-top: 10px;
-            color: var(--muted);
-            font-size: 12px;
-            font-weight: 800;
-            line-height: 1.4;
-        }
-
-        /* ✅ 우측 하단 작은 버튼(공유/북마크) */
-        .corner-actions{
-            position:absolute;
-            right: 0;
-            bottom: 0;
-            display:flex;
-            gap: 8px;
-            align-items:center;
-            justify-content:flex-end;
-        }
-        .btn-mini{
-            border: 1px solid rgba(220,162,68,0.55);
-            background:#fff;
-            color: var(--accent);
+            cursor:pointer;
+            padding: 10px 12px;
             border-radius: 999px;
-            padding: 8px 10px;
-            cursor: pointer;
-            font-weight: 900;
-            display:inline-flex;
-            align-items:center;
-            justify-content:center;
-            gap:6px;
-            white-space: nowrap;
-            min-height: 36px;
-            text-decoration:none;
-            box-shadow:none;
-        }
-        .btn-mini:hover{ background:#fff7e6; box-shadow: 0 8px 16px rgba(0,0,0,0.08); }
-        .btn-mini-primary{
-            background: var(--accent);
-            color:#fff;
-            border-color: var(--accent);
-        }
-        .btn-mini-primary:hover{ background:#c89035; }
-        .chip-mini{
-            font-size:11px;
-            padding:3px 8px;
-            border-radius:999px;
-            border:1px solid rgba(255,255,255,0.35);
-            color:#fff;
-            background: rgba(255,255,255,0.18);
-            font-weight: 900;
+            transition: transform .12s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease, color .18s ease;
+            user-select: none;
         }
 
-        .section-card{
-            background:#fff;
-            border:1px solid var(--accent);
+        .btn-text:hover{
+            background: #fafafa;
+            border-color: #d8d8d8;
+            color: var(--text);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 18px rgba(0,0,0,0.06);
+        }
+
+        .btn-text:active{
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        .btn-text .btn-ico{
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        .btn-text .btn-label{
+            line-height: 1;
+        }
+
+        /* 공유 버튼: 살짝 포인트 */
+        .btn-share{
+            border-color: rgba(220,162,68,.35);
+        }
+        .btn-share:hover{
+            border-color: rgba(220,162,68,.55);
+        }
+
+        /* 북마크 버튼: 기본은 은은 */
+        .btn-bookmark{
+            border-color: #e7e7e7;
+        }
+
+        /* ✅ 북마크 활성 상태(북마크됨) */
+        .btn-bookmark.active{
+            background: rgba(220,162,68,.14);
+            border-color: rgba(220,162,68,.55);
+            color: var(--accent);
+            box-shadow: 0 10px 20px rgba(220,162,68,.16);
+        }
+
+        .btn-bookmark.active:hover{
+            background: rgba(220,162,68,.18);
+            border-color: rgba(220,162,68,.70);
+        }
+
+        /* =========================================
+           4. 컨텐츠 섹션(도서소개/리뷰)
+           ========================================= */
+        .content-section { margin-top: 0; padding-top: 0; }
+        .sec-inner{
+            width: min(var(--inner-max), 100%);
+            margin: 0 auto;
+            padding: 40px 0;
+            border-bottom: 1px solid var(--line);
+        }
+        .content-section:last-of-type .sec-inner{ border-bottom: none; }
+
+        .sec-head {
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .desc-text { font-size: 16px; line-height: 1.8; color: #333; white-space: pre-line; text-align: justify; }
+
+        .review-grid { display: grid; gap: 16px; }
+        .review-card { background: var(--light-bg); padding: 24px; border-radius: var(--radius); border: 1px solid transparent; }
+        .review-meta { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; color: var(--muted); }
+        .review-rate { color: var(--accent); font-weight: 800; }
+        .review-body { font-size: 15px; color: #444; line-height: 1.6; }
+
+        @media (max-width: 1024px) {
+            :root{ --inner-max: 100%; }
+            .detail-container { grid-template-columns: 1fr; gap: 26px; }
+            .cover { max-width: 480px; margin: 0 auto; }
+            .info-pane { text-align: center; }
+            .meta-row { justify-content: center; }
+            .sub-buttons { justify-content: center; }
+            .main-buttons { grid-template-columns: 1fr; height: auto; }
+            .main-buttons .btn{ height: 56px; }
+
+            /* 모바일에서는 아래로 내리지 않음 */
+            .purchase-box{ margin-top: 0; }
+        }
+
+        /* =========================
+   My Review Box
+   ========================= */
+        .my-review-card{
+            border: 1px solid var(--line);
             border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            padding: 18px;
+            background: #fff;
+            box-shadow: var(--shadow-soft);
+            padding: 16px;
         }
-        .section-title{ font-size: 16px; font-weight: 900; margin: 0 0 10px; }
-        .desc{ color: #222; line-height: 1.75; font-size: 14px; white-space: pre-line; }
-
-        /* 리뷰 */
-        .review-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
-        .review-score{ display:flex; align-items:center; gap:10px; }
-        .star{ font-size: 16px; }
-        .review-list{ display:flex; flex-direction:column; gap: 10px; margin-top: 10px; }
-        .review-item{ border:1px solid var(--line); border-radius: var(--radius); padding: 12px; background:#fff; }
-        .review-top{ display:flex; align-items:center; justify-content:space-between; gap: 10px; }
-        .review-writer{ color: var(--muted); font-size: 13px; font-weight: 800; }
-        .review-title{ font-weight: 900; margin: 8px 0 6px; }
-        .review-content{ color:#222; line-height: 1.6; font-size: 14px; white-space: pre-line; }
-
-        @media (max-width: 1024px){
-            .page-inner{ padding: 20px 12px; }
-            .card-inner{ padding: 16px; }
-            .section-card{ padding: 16px; }
-            .title{ font-size: 22px; }
-            .main-actions{ grid-template-columns: 1fr; }
-            #rentActions{ flex-direction: column; }
-            .corner-actions{ position: static; margin-top: 10px; justify-content:flex-end; }
-            .info-pane{ padding-bottom: 0; }
+        .my-review-top{
+            display:flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--line);
+            margin-bottom: 12px;
+        }
+        .my-review-title{
+            font-weight: 900;
+            font-size: 16px;
+        }
+        .my-review-msg{
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .my-review-form{
+            display:flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .my-review-row{
+            display:flex;
+            align-items:center;
+            gap: 10px;
+        }
+        .my-review-label{
+            font-weight: 800;
+            font-size: 14px;
+            color: var(--muted);
+            width: 44px;
+        }
+        .my-review-select{
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 8px 10px;
+        }
+        .my-review-input, .my-review-textarea{
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 14px;
+        }
+        .my-review-textarea{ resize: vertical; }
+        .btn-review{
+            background: var(--accent);
+            color: #fff;
         }
 
-        @media (max-width: 860px){
-            .detail-grid{ grid-template-columns: 1fr; }
-            .cover{ max-width: 380px; margin: 0 auto; }
-            .kpi{ grid-template-columns: 1fr 1fr; }
-            .title-row{ flex-wrap:wrap; }
-            .corner-actions{ justify-content:flex-start; }
-        }
-
-        @media (max-width: 420px){
-            .kpi{ grid-template-columns: 1fr; }
-            .btn{ width:100%; }
-            .meta{ font-size: 13px; }
-            .btn-pair{ width:100%; }
-            .corner-actions{ flex-wrap:wrap; }
-        }
     </style>
 </head>
 
 <body>
 <div th:replace="fragments/header :: header"></div>
-<div class="page">
-    <div class="page-inner">
-        <div class="wrap">
+
+<div class="wrap">
+    <div class="wrap-inner">
+
+        <main class="center">
 
             <div class="crumbbar">
-                <a class="crumb-home" th:href="@{/book/search}" aria-label="검색">🏠</a>
+                <div class="crumb-left">
+                    <a class="crumb-home" th:href="@{/book/search}" aria-label="검색">
+                        <span aria-hidden="true">🏠</span><span>홈</span>
+                    </a>
 
-                <span th:if="${view.genrePath != null and view.genrePath.crumbs != null and !view.genrePath.crumbs.isEmpty()}">
-          <span th:each="c, st : ${view.genrePath.crumbs}">
-            <span class="crumb-sep">›</span>
-            <a th:href="@{/book/search(mall=${view.genrePath.mall}, parentGenreId=${c.genreId})}"
-               th:text="${#strings.replace(c.genreNm, '_', '')}">장르</a>
-
-          </span>
-        </span>
+                    <span th:if="${view.genrePath != null and view.genrePath.crumbs != null and !view.genrePath.crumbs.isEmpty()}"
+                          th:each="c, st : ${view.genrePath.crumbs}">
+                        <span class="crumb-sep">&rsaquo;</span>
+                        <a th:href="@{/book/search(mall=${view.genrePath.mall}, parentGenreId=${c.genreId})}"
+                           th:text="${#strings.replace(c.genreNm, '_', '')}"
+                           th:classappend="${st.last} ? 'crumb-current' : 'crumb-link'">장르</a>
+                    </span>
+                </div>
             </div>
 
-            <div class="card">
-                <div class="card-inner">
-                    <div class="detail-grid">
-                        <!-- 표지 -->
-                        <div class="cover">
-                            <div class="badge-ebook-ribbon"
-                                 th:if="${view.bookDetailDTO.ebookYn == 'Y'}"
-                                 title="전자책">E</div>
+            <!-- ✅ 상단 상세 영역 -->
+            <div class="detail-section">
+                <div class="section-inner">
+                    <div class="detail-container">
+                        <div class="cover-area">
+                            <div class="cover">
+                                <div class="badge-ebook-ribbon"
+                                     th:if="${view.bookDetailDTO.ebookYn == 'Y'}"
+                                     title="전자책">E</div>
 
-                            <img th:src="${#strings.isEmpty(view.bookDetailDTO.naverImage) ? view.bookDetailDTO.aladinImageBig : view.bookDetailDTO.naverImage}"
-                                 alt="cover"/>
+                                <img th:src="${#strings.isEmpty(view.bookDetailDTO.naverImage) ? view.bookDetailDTO.aladinImageBig : view.bookDetailDTO.naverImage}"
+                                     alt="도서 표지"/>
+                            </div>
                         </div>
 
-                        <!-- 정보 -->
                         <div class="info-pane">
 
-                            <!-- 제목 + 전자책/종이책 보기(우측 상단) -->
-                            <div class="title-row">
+                            <div class="header-section">
                                 <h1 class="title" th:text="${view.bookDetailDTO.bookTitle}">도서 제목</h1>
-
-                            </div>
-
-                            <div class="meta">
-                                <span th:text="${#strings.replace(view.bookDetailDTO.authors, '^', ' · ')}">저자</span>
-                                <span>｜</span>
-                                <span th:text="${#strings.trim(#strings.replace(view.bookDetailDTO.publisher, '_', ''))}">출판사</span>
-                                <span>｜</span>
-                                <span th:text="${view.bookDetailDTO.pubdate}">출간일</span>
-                            </div>
-
-                            <div class="lend-info">
-                            <a class="btn-pair"
-                               th:if="${view.pairYn == 'Y'}"
-                               th:text="${view.pairLabel}"
-                               th:href="@{/book/detail/{isbn13}(isbn13=${view.pairIsbn13})}">
-                                전자책 보기
-                            </a>
-
-
-                            <!-- KPI (cardinner 중간쪽) -->
-                            <div class="kpi" id="kpiBox">
-                                <div class="item">
-                                    <div class="label">대여중 / 소장권수</div>
-                                    <div class="value">
-                                        <span id="lendingCnt">0</span><span class="slash">/</span>
-                                        <span id="ownedCnt" th:text="${view.inventory.totalCount}">0</span>
-                                    </div>
-                                </div>
-
-                                <div class="item">
-                                    <div class="label">예약중 / 예약가능인원</div>
-                                    <div class="value">
-                                        <span id="rsvActiveCnt">0</span><span class="slash">/</span>
-                                        <span id="rsvLimit">10</span>
-                                    </div>
+                                <div class="meta-row">
+                                    <span th:text="${#strings.replace(view.bookDetailDTO.authors, '^', ', ')}">저자</span>
+                                    <span class="meta-divider"></span>
+                                    <span th:text="${#strings.trim(#strings.replace(view.bookDetailDTO.publisher, '_', ''))}">출판사</span>
+                                    <span class="meta-divider"></span>
+                                    <span th:text="${view.bookDetailDTO.pubdate}">출간일</span>
                                 </div>
                             </div>
 
-                            <!-- ✅ 장바구니 + 대여하기(대여/예약/연장) 같은 라인 -->
-                            <div class="main-actions">
-                                <button id="btnCart"
-                                        class="btn"
-                                        type="button"
-                                        th:attr="data-isbn=${view.bookDetailDTO.isbn13}"
-                                        aria-label="cart">
-                                    <span id="cartText">장바구니 담기</span>
-                                </button>
+                            <!-- ✅ KPI/토글/버튼 덩어리만 아래로 내리기 -->
+                            <div class="purchase-box">
 
-                                <div>
-                                    <div id="rentActions">
-                                        <button class="btn" disabled>상태 확인중…</button>
+                                <div class="status-bar" id="kpiBox">
+                                    <div class="status-item">
+                                        <div class="status-label">대여현황</div>
+                                        <div class="status-value">
+                                            <span id="lendingCnt">0</span>
+                                            <span class="total">/ <span id="ownedCnt" th:text="${view.inventory.totalCount}">0</span>권</span>
+                                        </div>
+                                    </div>
+                                    <div class="status-item">
+                                        <div class="status-label">예약대기</div>
+                                        <div class="status-value">
+                                            <span id="rsvActiveCnt">0</span>
+                                            <span class="total">/ <span id="rsvLimit">10</span>명</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            </div>
 
-                            <!-- ✅ 공유/북마크: 우측 하단 구석(작게) -->
-                            <div class="corner-actions">
-                                <button id="btnShare"
-                                        class="btn-mini"
-                                        type="button"
-                                        aria-label="share"
-                                        title="링크 복사">
-                                    🔗 <span>공유</span>
-                                </button>
+                                <div class="format-group">
+                                    <a class="format-item"
+                                       th:classappend="${view.bookDetailDTO.ebookYn == 'N'} ? 'active' : (${view.pairYn == 'N'} ? 'disabled' : '')"
+                                       th:href="@{ ${ (view.bookDetailDTO.ebookYn == 'Y' and view.pairYn == 'Y') ? ('/book/detail/' + view.pairIsbn13) : '#' } }"
+                                       th:title="${view.bookDetailDTO.ebookYn == 'N'} ? '현재 종이책 보고 있음' : '종이책 페이지로 이동'">
+                                        <span th:if="${view.bookDetailDTO.ebookYn == 'N'}" class="check-icon">✔</span>
+                                        종이책
+                                    </a>
 
-                                <button id="btnBookmark"
-                                        class="btn-mini btn-mini-primary"
-                                        type="button"
-                                        th:attr="data-isbn=${view.bookDetailDTO.isbn13}"
-                                        aria-label="bookmark"
-                                        title="북마크">
-                                    <span id="bookmarkIcon" aria-hidden="true">☆</span>
-                                    <span id="bookmarkText">북마크</span>
-                                    <span class="chip-mini" id="bookmarkCnt" th:text="${view.bookmarkCnt}">0</span>
-                                </button>
+                                    <a class="format-item"
+                                       th:classappend="${view.bookDetailDTO.ebookYn == 'Y'} ? 'active' : (${view.pairYn == 'N'} ? 'disabled' : '')"
+                                       th:href="@{ ${ (view.bookDetailDTO.ebookYn == 'N' and view.pairYn == 'Y') ? ('/book/detail/' + view.pairIsbn13) : '#' } }"
+                                       th:title="${view.bookDetailDTO.ebookYn == 'Y'} ? '현재 전자책 보고 있음' : '전자책 페이지로 이동'">
+                                        <span th:if="${view.bookDetailDTO.ebookYn == 'Y'}" class="check-icon">✔</span>
+                                        전자책
+                                    </a>
+                                </div>
+
+                                <div class="action-area">
+                                    <div class="main-buttons">
+                                        <button id="btnCart"
+                                                class="btn"
+                                                type="button"
+                                                th:attr="data-isbn=${view.bookDetailDTO.isbn13}">
+                                            <span id="cartText">장바구니</span>
+                                        </button>
+
+                                        <div id="rentActions">
+                                            <button class="btn" disabled>확인중...</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="rent-hint" id="rentHint"></div>
+
+                                    <div class="sub-buttons">
+                                        <button id="btnShare" class="btn-text btn-share" type="button" title="주소 복사">
+                                            <span class="btn-ico" aria-hidden="true">🔗</span>
+                                            <span class="btn-label">공유하기</span>
+                                        </button>
+
+
+                                        <button id="btnBookmark"
+                                                class="btn-text btn-bookmark"
+                                                type="button"
+                                                th:attr="data-isbn=${view.bookDetailDTO.isbn13}"
+                                                aria-pressed="false">
+                                            <span class="btn-ico" id="bookmarkIcon" aria-hidden="true">☆</span>
+                                            <span class="btn-label" id="bookmarkText">북마크</span>
+                                        </button>
+
+                                    </div>
+                                </div>
+
                             </div>
+                            <!-- ✅ purchase-box 끝 -->
 
-                            <div class="rent-hint" id="rentHint"></div>
                         </div>
-
                     </div>
                 </div>
             </div>
 
-            <div style="height: 14px;"></div>
-
-            <div class="section-card">
-                <div class="section-title">도서 소개</div>
-                <div class="desc" th:text="${view.bookDetailDTO.description}">설명</div>
+            <!-- ✅ 도서 소개 -->
+            <div class="content-section">
+                <div class="sec-inner">
+                    <div class="sec-head">도서 소개</div>
+                    <div class="desc-text" th:text="${view.bookDetailDTO.description}">설명</div>
+                </div>
             </div>
 
-            <div style="height: 14px;"></div>
+            <!-- ✅ 리뷰 -->
+            <div class="content-section">
+                <div class="sec-inner">
+                    <div class="sec-head">
+                        리뷰
 
-            <div class="section-card">
-                <div class="review-head">
-                    <div class="section-title">리뷰</div>
-
-                    <div class="review-score">
-                        <span class="star">★</span>
-                        <strong id="ratingAvg"
-                                th:text="${view.reviewSummary != null ? view.reviewSummary.ratingAvg : 0.0}">0.0</strong>
-                        <span class="chip">
-              <span id="reviewCnt"
-                    th:text="${view.reviewSummary != null ? view.reviewSummary.reviewCnt : 0}">0</span>개
-            </span>
-                    </div>
-                </div>
-
-                <div class="review-list" th:if="${view.reviewPreview != null and !view.reviewPreview.isEmpty()}">
-                    <div class="review-item" th:each="r : ${view.reviewPreview}">
-                        <div class="review-top">
-                            <div class="review-writer">
-                                <span th:text="${r.profileNm}">작성자</span>
-                                <span> · </span>
-                                <span th:text="${#temporals.format(r.createdAt, 'yyyy-MM-dd HH:mm')}">2026-01-01</span>
+                        <!-- 오른쪽: KPI + 리뷰작성 버튼(항시노출) -->
+                        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                            <div style="font-size: 16px; font-weight: normal; display: flex; align-items: center; gap: 8px;">
+                                <span style="color:var(--accent);">★</span>
+                                <strong id="ratingAvg"
+                                        th:text="${view.reviewSummary != null ? view.reviewSummary.ratingAvg : 0.0}">0.0</strong>
+                                <span style="color:#aaa;">(<span id="reviewCnt"
+                                                                 th:text="${view.reviewSummary != null ? view.reviewSummary.reviewCnt : 0}">0</span>개)</span>
                             </div>
-                            <div class="chip">
-                                ★ <span th:text="${r.rate}">5</span>
+
+                            <button id="btnOpenReview" class="btn-text" type="button" title="리뷰 작성">
+                                <span class="btn-ico" aria-hidden="true">✍</span>
+                                <span class="btn-label" id="btnOpenReviewText">리뷰 작성</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ✅ 내 리뷰 작성 박스 (클릭 후 permission 통과 시에만 display:block 처리) -->
+                    <div id="myReviewBox" style="display:none; margin-top: 14px;">
+                        <div class="my-review-card">
+                            <div class="my-review-top">
+                                <div class="my-review-title" id="myReviewTitleText">리뷰 작성</div>
+                                <div class="my-review-msg" id="reviewPermMsg"></div>
+                            </div>
+
+                            <div class="my-review-form">
+                                <div class="my-review-row">
+                                    <label class="my-review-label">평점</label>
+                                    <select id="reviewRate" class="my-review-select">
+                                        <option value="5">5</option><option value="4">4</option><option value="3">3</option>
+                                        <option value="2">2</option><option value="1">1</option>
+                                    </select>
+                                    <span style="color:var(--accent); font-weight:900;">★</span>
+                                </div>
+
+                                <input id="reviewTitle" type="text" placeholder="제목(선택)" class="my-review-input">
+                                <textarea id="reviewContent" rows="5" placeholder="리뷰 내용을 작성해주세요" class="my-review-textarea"></textarea>
+
+                                <div class="my-review-actions">
+                                    <button id="btnReviewSave" class="btn btn-review" type="button">리뷰 저장</button>
+                                </div>
                             </div>
                         </div>
-
-                        <div class="review-title" th:text="${r.title}">리뷰 제목</div>
-                        <div class="review-content" th:text="${r.content}">리뷰 내용</div>
                     </div>
-                </div>
 
-                <div class="desc" th:if="${view.reviewPreview == null or view.reviewPreview.isEmpty()}">
-                    아직 등록된 리뷰가 없습니다.
+
+                    <div class="review-grid" th:if="${view.reviewPreview != null and !view.reviewPreview.isEmpty()}">
+                        <div class="review-card" th:each="r : ${view.reviewPreview}">
+                            <div class="review-meta">
+                                <span class="review-rate">★ <span th:text="${r.rate}">5</span></span>
+                                <span>
+                                    <span th:text="${r.profileNm}">작성자</span> ·
+                                    <span th:text="${#temporals.format(r.createdAt, 'yyyy.MM.dd')}">날짜</span>
+                                </span>
+                            </div>
+                            <div style="font-weight:bold; margin-bottom:6px;" th:text="${r.title}">제목</div>
+                            <div class="review-body" th:text="${r.content}">내용</div>
+                        </div>
+                    </div>
+
+                    <div class="desc-text" style="text-align: center; color: #999; padding: 40px;"
+                         th:if="${view.reviewPreview == null or view.reviewPreview.isEmpty()}">
+                        등록된 리뷰가 없습니다.
+                    </div>
                 </div>
             </div>
 
-        </div>
+        </main>
     </div>
 </div>
 
 <script th:inline="javascript">
-    function goLoginReturnHere() {
-        const returnUrl = location.pathname + location.search + location.hash;
-        location.href = "/users/login?redirect=" + encodeURIComponent(returnUrl);
-    }
+    document.addEventListener("DOMContentLoaded", () => {
 
-    async function fetchJson(url, options = {}) {
-        const res = await fetch(url, {
-            headers: { "Accept": "application/json", ...(options.headers || {}) },
-            ...options
-        });
+        const isbn13 = /*[[${view.bookDetailDTO.isbn13}]]*/ "";
+        const initialBookmarkedYn = /*[[${view.bookmarkedYn}]]*/ "N";
 
-        const ct = res.headers.get("content-type") || "";
-        if (res.status === 401 || res.status === 403 || ct.includes("text/html") || res.redirected) {
-            goLoginReturnHere();
-            return null;
-        }
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        return await res.json();
-    }
-
-    async function postForm(url, bodyObj) {
-        const body = new URLSearchParams(bodyObj).toString();
-        const res = await fetch(url, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-                "Accept": "application/json"
-            },
-            body
-        });
-
-        const ct = res.headers.get("content-type") || "";
-        if (res.status === 401 || res.status === 403 || ct.includes("text/html") || res.redirected) {
-            goLoginReturnHere();
-            return null;
+        // -----------------------------
+        // 공통
+        // -----------------------------
+        function goLoginReturnHere() {
+            const returnUrl = location.pathname + location.search + location.hash;
+            location.href = "/users/login?redirect=" + encodeURIComponent(returnUrl);
         }
 
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        return res;
-    }
-
-    // ==========================
-    // 북마크
-    // ==========================
-    const initialBookmarkedYn = /*[[${view.bookmarkedYn}]]*/ "N";
-    const isbn13 = /*[[${view.bookDetailDTO.isbn13}]]*/ "";
-
-    const btnBm = document.getElementById('btnBookmark');
-    const iconEl = document.getElementById('bookmarkIcon');
-    const textEl = document.getElementById('bookmarkText');
-    const cntEl  = document.getElementById('bookmarkCnt');
-
-    function renderBookmark(yn){
-        if(yn === 'Y'){
-            iconEl.textContent = '★';
-            textEl.textContent = '북마크됨';
-        }else{
-            iconEl.textContent = '☆';
-            textEl.textContent = '북마크';
-        }
-    }
-    renderBookmark(initialBookmarkedYn);
-
-    async function toggleBookmark(){
-        btnBm.disabled = true;
-        try{
-            const res = await fetch(`/api/bookmarks/${encodeURIComponent(isbn13)}/toggle`, {
-                method: 'POST',
-                headers: { 'Accept': 'application/json' }
+        async function fetchJson(url, options = {}, onAuth = "silent") {
+            // onAuth: "silent"(아무것도 안 함), "redirect"(로그인 이동)
+            const res = await fetch(url, {
+                headers: {"Accept": "application/json", ...(options.headers || {})},
+                ...options
             });
 
-            if(res.status === 401){ goLoginReturnHere(); return; }
+            const ct = res.headers.get("content-type") || "";
+            const authFail = (res.status === 401 || res.status === 403 || ct.includes("text/html") || res.redirected);
 
-            const ct = res.headers.get('content-type') || '';
-            if(!ct.includes('application/json')){ goLoginReturnHere(); return; }
+            if (authFail) {
+                if (onAuth === "redirect") goLoginReturnHere();
+                return null;
+            }
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            return await res.json();
+        }
 
-            if(!res.ok){
-                alert('북마크 처리에 실패했습니다.');
+        async function postForm(url, bodyObj, onAuth = "redirect") {
+            const body = new URLSearchParams(bodyObj).toString();
+            const res = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Accept": "application/json"
+                },
+                body
+            });
+
+            const ct = res.headers.get("content-type") || "";
+            const authFail = (res.status === 401 || res.status === 403 || ct.includes("text/html") || res.redirected);
+
+            if (authFail) {
+                if (onAuth === "redirect") goLoginReturnHere();
+                return null;
+            }
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            return res;
+        }
+
+        // -----------------------------
+        // 북마크
+        // -----------------------------
+        const btnBm = document.getElementById("btnBookmark");
+        const iconEl = document.getElementById("bookmarkIcon");
+        const textEl = document.getElementById("bookmarkText");
+
+        function renderBookmark(yn) {
+            const isOn = (yn === "Y");
+            if (isOn) {
+                iconEl.textContent = "★";
+                btnBm.classList.add("active");
+                btnBm.setAttribute("aria-pressed", "true");
+                textEl.textContent = "북마크됨";
+            } else {
+                iconEl.textContent = "☆";
+                btnBm.classList.remove("active");
+                btnBm.setAttribute("aria-pressed", "false");
+                textEl.textContent = "북마크";
+            }
+        }
+
+        renderBookmark(initialBookmarkedYn);
+
+        btnBm?.addEventListener("click", async () => {
+            btnBm.disabled = true;
+            try {
+                // ✅ 클릭 액션은 401이면 로그인으로 보냄
+                const data = await fetchJson(`/api/bookmarks/${encodeURIComponent(isbn13)}/toggle`, {
+                    method: "POST"
+                }, "redirect");
+
+                if (!data) return;
+                renderBookmark(data.bookmarkedYn);
+            } catch (e) {
+                console.error(e);
+                alert("북마크 처리 중 오류가 발생했습니다.");
+            } finally {
+                btnBm.disabled = false;
+            }
+        });
+
+        // -----------------------------
+        // 장바구니
+        // -----------------------------
+        const btnCart = document.getElementById("btnCart");
+        const cartTextEl = document.getElementById("cartText");
+
+        function renderCartState(inCart) {
+            cartTextEl.textContent = inCart ? "담김 ✓" : "장바구니";
+        }
+
+        async function loadCartStatus() {
+            try {
+                // ✅ 백그라운드 GET은 401이어도 튕기지 않음
+                const data = await fetchJson(`/book/cart/${encodeURIComponent(isbn13)}/status`, {}, "silent");
+                if (!data) {
+                    // 비로그인이면 그냥 기본 상태 유지
+                    renderCartState(false);
+                    return;
+                }
+                renderCartState(!!data.inCart);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        btnCart?.addEventListener("click", async () => {
+            btnCart.disabled = true;
+            try {
+                // ✅ 클릭 액션은 401이면 로그인으로 보냄
+                const data = await fetchJson(`/book/cart/${encodeURIComponent(isbn13)}/toggle`, {
+                    method: "POST"
+                }, "redirect");
+
+                if (!data) return;
+                renderCartState(!!data.inCart);
+            } catch (e) {
+                console.error(e);
+                alert("장바구니 처리 중 오류가 발생했습니다.");
+            } finally {
+                btnCart.disabled = false;
+            }
+        });
+
+        loadCartStatus();
+
+        // -----------------------------
+        // 공유
+        // -----------------------------
+        const btnShare = document.getElementById("btnShare");
+
+        async function copyToClipboard(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
+                return;
+            }
+            const ta = document.createElement("textarea");
+            ta.value = text;
+            ta.style.position = "fixed";
+            ta.style.left = "-9999px";
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            document.execCommand("copy");
+            ta.remove();
+        }
+
+        btnShare?.addEventListener("click", async () => {
+            try {
+                await copyToClipboard(location.href);
+                alert("링크 복사 완료!");
+            } catch (e) {
+                alert("주소창을 복사해주세요.");
+            }
+        });
+
+        // -----------------------------
+        // 대여/예약/연장
+        // -----------------------------
+        const $rentActions = document.getElementById("rentActions");
+        const $rentHint = document.getElementById("rentHint");
+
+        function setRentHint(msg) {
+            if ($rentHint) $rentHint.textContent = msg || "";
+        }
+
+        function buildRentButtons(it) {
+            if (!it) return `<button class="btn" disabled>상태 조회 실패</button>`;
+
+            if (it.myLendYn === "Y") {
+                if (it.myExtendYn === "Y") {
+                    setRentHint("반납예정일 7일 이내 & 연장 1회 미사용이면 연장 가능합니다.");
+                    return `<button class="btn btn-extend" data-lend-id="${it.myLendId}">연장하기</button>
+                        <button class="btn" disabled style="background:#f0f0f0; border:none; color:#aaa;">대여중</button>`;
+                }
+                setRentHint("현재 이 도서를 대여 중입니다.");
+                return `<button class="btn" disabled>대여중</button>`;
+            }
+
+            if (Number(it.availableCnt) > 0) {
+                setRentHint("대여하기를 누르면 장바구니에 담긴 후 장바구니 페이지로 이동합니다.");
+                return `<button class="btn btn-addcart">대여하기</button>`;
+            }
+
+            if (it.myRsvYn === "Y") {
+                setRentHint("이미 예약한 도서입니다.");
+                return `<button class="btn btn-rsv-cancel" data-rsv-id="${it.myRsvId}"
+                    style="background:#fff; color:var(--text); border-color:#ccc;">예약취소</button>`;
+            }
+
+            if (it.userBlockedYn === "Y" || it.userOverdueYn === "Y" || it.rsvLimitYn === "Y") {
+                let reason = "예약 불가";
+                if (it.userBlockedYn === "Y") reason = "차단된 사용자입니다.";
+                else if (it.userOverdueYn === "Y") reason = "연체 중입니다.";
+                else if (it.rsvLimitYn === "Y") reason = "예약 인원 초과";
+                setRentHint(reason);
+                return `<button class="btn" disabled>예약 불가</button>`;
+            }
+
+            setRentHint("모든 책이 대여중이므로 예약만 가능합니다.");
+            return `<button class="btn btn-rsv">예약하기</button>`;
+        }
+
+        function updateKpiByStatus(dto) {
+            const lendingCntEl = document.getElementById("lendingCnt");
+            const ownedCntEl = document.getElementById("ownedCnt");
+            const rsvActiveCntEl = document.getElementById("rsvActiveCnt");
+            const rsvLimitEl = document.getElementById("rsvLimit");
+
+            if (ownedCntEl && dto?.ownedCnt != null) ownedCntEl.textContent = String(dto.ownedCnt);
+            if (lendingCntEl && dto?.lendingCnt != null) lendingCntEl.textContent = String(dto.lendingCnt);
+            if (rsvActiveCntEl && dto?.rsvActiveCnt != null) rsvActiveCntEl.textContent = String(dto.rsvActiveCnt);
+            if (rsvLimitEl) rsvLimitEl.textContent = String(dto?.rsvLimit ?? 10);
+        }
+
+        async function loadCirculationStatus() {
+            try {
+                // ✅ 백그라운드 GET은 401이어도 튕기지 않음
+                const dto = await fetchJson(`/book/circulation/status?isbn13=${encodeURIComponent(isbn13)}`, {}, "silent");
+
+                if (!dto) {
+                    // 비로그인/권한 없으면 “로그인 후 이용”으로 바꿔서 확인중 탈출
+                    setRentHint("로그인 후 대여/예약이 가능합니다.");
+                    $rentActions.innerHTML = `<button class="btn btn-login">로그인 후 이용</button>`;
+                    return;
+                }
+
+                updateKpiByStatus(dto);
+                $rentActions.innerHTML = buildRentButtons(dto);
+            } catch (e) {
+                console.error(e);
+                setRentHint("상태 조회 중 오류가 발생했습니다.");
+                $rentActions.innerHTML = `<button class="btn" disabled>조회 실패</button>`;
+            }
+        }
+
+        $rentActions?.addEventListener("click", async (e) => {
+            const b = e.target.closest("button");
+            if (!b) return;
+
+            if (b.classList.contains("btn-login")) {
+                goLoginReturnHere();
                 return;
             }
 
-            const data = await res.json();
-            renderBookmark(data.bookmarkedYn);
-            if(typeof data.bookmarkCnt !== 'undefined'){
-                cntEl.textContent = data.bookmarkCnt;
+            try {
+                if (b.classList.contains("btn-rsv")) {
+                    const res = await postForm("/book/circulation/reserve", {isbn13}, "redirect");
+                    if (res) await loadCirculationStatus();
+                    return;
+                }
+                if (b.classList.contains("btn-rsv-cancel")) {
+                    const rsvId = b.dataset.rsvId;
+                    const res = await postForm("/book/circulation/reserve/cancel", {rsvId}, "redirect");
+                    if (res) await loadCirculationStatus();
+                    return;
+                }
+                if (b.classList.contains("btn-extend")) {
+                    const lendId = b.dataset.lendId;
+                    const res = await postForm("/book/circulation/extend", {lendId}, "redirect");
+                    if (res) await loadCirculationStatus();
+                    return;
+                }
+                if (b.classList.contains("btn-addcart")) {
+                    const res = await postForm("/book/cart/add", {isbn13}, "redirect");
+                    if (res) location.href = "/book/cart";
+                    return;
+                }
+            } catch (e2) {
+                console.error(e2);
+                alert("요청 처리 중 오류가 발생했습니다.");
             }
-        }catch(e){
-            console.error(e);
-            alert('네트워크 오류가 발생했습니다.');
-        }finally{
-            btnBm.disabled = false;
+        });
+
+        loadCirculationStatus();
+
+        // -----------------------------
+        // 리뷰 KPI (조회만)
+        // -----------------------------
+        const ratingAvgEl = document.getElementById("ratingAvg");
+        const reviewCntEl = document.getElementById("reviewCnt");
+
+        async function loadReviewStatus() {
+            try {
+                const dto = await fetchJson(`/book/reviewstatus/${encodeURIComponent(isbn13)}`, {}, "silent");
+                if (!dto) return;
+                if (ratingAvgEl) ratingAvgEl.textContent = Number(dto.ratingAvg ?? 0).toFixed(1);
+                if (reviewCntEl) reviewCntEl.textContent = String(dto.reviewCnt ?? 0);
+            } catch (e) {
+                console.error(e);
+            }
         }
-    }
-    btnBm.addEventListener('click', toggleBookmark);
 
-    // ==========================
-    // 장바구니 (담기만 / 이동 X)
-    // ==========================
-    const btnCart = document.getElementById('btnCart');
-    const cartIconEl = document.getElementById('cartIcon');
-    const cartTextEl = document.getElementById('cartText');
+        loadReviewStatus();
 
-    function renderCart(inCart){
-        if(inCart){
-            cartTextEl.textContent = '담김';
-        }else{
-            cartTextEl.textContent = '장바구니';
-            alert("장바구니에 추가 되었습니다.")
-        }
-    }
 
-    async function toggleCartOnly(){
-        btnCart.disabled = true;
-        try{
-            const res = await fetch(`/book/cart/${encodeURIComponent(isbn13)}/toggle`, {
-                method: 'POST',
-                headers: { 'Accept': 'application/json' }
-            });
+        // =============================
+// 리뷰 작성/저장
+// =============================
+        const btnOpenReview = document.getElementById("btnOpenReview");
+        const myReviewBox = document.getElementById("myReviewBox");
+        const reviewPermMsg = document.getElementById("reviewPermMsg");
+        const btnReviewSave = document.getElementById("btnReviewSave");
 
-            if(res.status === 401){ goLoginReturnHere(); return; }
+        const reviewRateEl = document.getElementById("reviewRate");
+        const reviewTitleEl = document.getElementById("reviewTitle");
+        const reviewContentEl = document.getElementById("reviewContent");
 
-            const ct = res.headers.get('content-type') || '';
-            if(!ct.includes('application/json')){ goLoginReturnHere(); return; }
+// ✅ permission 확인 후 박스 열기
+        btnOpenReview?.addEventListener("click", async () => {
+            try {
+                const perm = await fetchJson(
+                    `/book/review/permission?isbn13=${encodeURIComponent(isbn13)}`,
+                    {},
+                    "redirect"
+                );
+                if (!perm) return;
 
-            if(!res.ok){
-                alert('장바구니 처리에 실패했습니다.');
+                // ✅ DTO 기준으로 판정
+                const allowed = (perm.allowedYn === "Y");
+                const msg = (perm.message ?? "");
+
+                myReviewBox.style.display = "block";
+                reviewPermMsg.textContent = msg;
+
+                // ✅ 가능/불가능에 따라 버튼 제어
+                btnReviewSave.disabled = !allowed;
+
+                // (선택) 기존 리뷰 있으면 수정모드 표시
+                const hasReview = (perm.hasReviewYn === "Y");
+                const titleEl = document.getElementById("myReviewTitleText");
+                if (titleEl) titleEl.textContent = hasReview ? "리뷰 수정" : "리뷰 작성";
+                const btnLabel = document.getElementById("btnOpenReviewText");
+                if (btnLabel) btnLabel.textContent = hasReview ? "리뷰 수정" : "리뷰 작성";
+
+                if (allowed) reviewContentEl?.focus();
+            } catch (e) {
+                console.error(e);
+                alert("리뷰 작성 권한 조회 중 오류가 발생했습니다.");
+            }
+        });
+
+
+// ✅ JSON으로 /book/review/save 호출
+        btnReviewSave?.addEventListener("click", async () => {
+            const rate = Number(reviewRateEl?.value ?? 5);
+            const title = (reviewTitleEl?.value ?? "").trim();
+            const content = (reviewContentEl?.value ?? "").trim();
+
+            if (!content) {
+                alert("리뷰 내용을 입력해주세요.");
+                reviewContentEl?.focus();
                 return;
             }
 
-            const data = await res.json();
-            renderCart(!!data.inCart);
+            btnReviewSave.disabled = true;
+            try {
+                const data = await fetchJson(
+                    "/book/review/save",
+                    {
+                        method: "POST",
+                        headers: {"Content-Type": "application/json"},
+                        body: JSON.stringify({isbn13, rate, title, content})
+                    },
+                    "redirect"
+                );
 
-        }catch(e){
-            console.error(e);
-            alert('네트워크 오류가 발생했습니다.');
-        }finally{
-            btnCart.disabled = false;
-        }
-    }
-    btnCart.addEventListener('click', toggleCartOnly);
+                if (!data?.ok) {
+                    alert("리뷰 저장 실패");
+                    return;
+                }
 
-    // ==========================
-    // 공유 (클립보드 복사만)
-    // ==========================
-    const btnShare = document.getElementById("btnShare");
+                alert("리뷰가 저장되었습니다.");
+                // KPI 재조회
+                await loadReviewStatus();
+                // 필요하면 새로고침(리뷰 리스트 미리보기까지 갱신하려면)
+                // location.reload();
 
-    async function copyToClipboard(text){
-        if (navigator.clipboard && window.isSecureContext) {
-            await navigator.clipboard.writeText(text);
-            return;
-        }
-        const ta = document.createElement("textarea");
-        ta.value = text;
-        ta.style.position = "fixed";
-        ta.style.left = "-9999px";
-        document.body.appendChild(ta);
-        ta.focus();
-        ta.select();
-        document.execCommand("copy");
-        ta.remove();
-    }
-
-    btnShare?.addEventListener("click", async () => {
-        const url = location.href;
-        try{
-            await copyToClipboard(url);
-            alert("링크가 복사되었습니다!");
-        }catch(e){
-            console.error(e);
-            alert("복사에 실패했습니다. 주소를 직접 복사해 주세요:\n" + url);
-        }
-    });
-
-    // ==========================
-    // 대여/예약/연장
-    // ==========================
-    const $rentActions = document.getElementById("rentActions");
-    const $rentHint = document.getElementById("rentHint");
-
-    function setRentHint(msg){
-        if(!$rentHint) return;
-        $rentHint.textContent = msg || "";
-    }
-
-    function buildRentButtons(it){
-        if(it.myLendYn === "Y"){
-            if(it.myExtendYn === "Y"){
-                setRentHint("반납예정일 7일 이내 & 연장 1회 미사용이면 연장 가능합니다.");
-                return `
-          <button class="btn btn-extend" data-lend-id="${it.myLendId}">연장하기</button>
-          <button class="btn" disabled>대여중</button>
-        `;
+            } catch (e) {
+                console.error(e);
+                alert("리뷰 저장 중 오류가 발생했습니다.");
+            } finally {
+                btnReviewSave.disabled = false;
             }
-            setRentHint("현재 이 도서를 대여 중입니다.");
-            return `<button class="btn" disabled>대여중</button>`;
-        }
 
-        if(Number(it.availableCnt) > 0){
-            setRentHint("대여하기를 누르면 장바구니에 담긴 후 장바구니 페이지로 이동합니다.");
-            return `<button class="btn btn-addcart">대여하기</button>`;
-        }
-
-        if(it.myRsvYn === "Y"){
-            setRentHint("이미 예약한 도서입니다.");
-            return `<button class="btn btn-rsv-cancel" data-rsv-id="${it.myRsvId}">예약취소</button>`;
-        }
-
-        if(it.userBlockedYn === "Y" || it.userOverdueYn === "Y" || it.rsvLimitYn === "Y"){
-            let reason = "예약이 불가능합니다.";
-            if(it.userBlockedYn === "Y") reason = "차단된 사용자 상태로 예약이 불가능합니다.";
-            else if(it.userOverdueYn === "Y") reason = "연체 상태에서는 예약이 불가능합니다.";
-            else if(it.rsvLimitYn === "Y") reason = "예약 인원이 가득 찼습니다.";
-            setRentHint(reason);
-            return `<button class="btn" disabled>예약 불가</button>`;
-        }
-
-        setRentHint("재고가 없으면 예약이 가능합니다.");
-        return `<button class="btn btn-rsv">예약하기</button>`;
-    }
-
-    function updateKpiByStatus(dto){
-        const lendingCntEl = document.getElementById("lendingCnt");
-        const ownedCntEl = document.getElementById("ownedCnt");
-        const rsvActiveCntEl = document.getElementById("rsvActiveCnt");
-        const rsvLimitEl = document.getElementById("rsvLimit");
-
-        if(ownedCntEl && dto.ownedCnt != null) ownedCntEl.textContent = String(dto.ownedCnt);
-        if(lendingCntEl && dto.lendingCnt != null) lendingCntEl.textContent = String(dto.lendingCnt);
-        if(rsvActiveCntEl && dto.rsvActiveCnt != null) rsvActiveCntEl.textContent = String(dto.rsvActiveCnt);
-        if(rsvLimitEl) rsvLimitEl.textContent = String(dto.rsvLimit ?? 10);
-    }
-
-    async function loadCirculationStatus(){
-        const dto = await fetchJson(`/book/circulation/status?isbn13=${encodeURIComponent(isbn13)}`);
-        if (!dto) return;
-        updateKpiByStatus(dto);
-        $rentActions.innerHTML = buildRentButtons(dto);
-    }
-
-    $rentActions.addEventListener("click", async (e) => {
-        const b = e.target.closest("button");
-        if(!b) return;
-
-        if (b.classList.contains("btn-rsv")) {
-            const res = await postForm("/book/circulation/reserve", { isbn13 });
-            if (res) loadCirculationStatus();
-            return;
-        }
-
-        if (b.classList.contains("btn-rsv-cancel")) {
-            const rsvId = b.dataset.rsvId;
-            const res = await postForm("/book/circulation/reserve/cancel", { rsvId });
-            if (res) loadCirculationStatus();
-            return;
-        }
-
-        if (b.classList.contains("btn-extend")) {
-            const lendId = b.dataset.lendId;
-            const res = await postForm("/book/circulation/extend", { lendId });
-            if (res) loadCirculationStatus();
-            return;
-        }
-
-        // ✅ 대여하기 = 장바구니 담고 이동
-        if (b.classList.contains("btn-addcart")) {
-            const res = await postForm("/book/cart/add", { isbn13 });
-            if (res) location.href = "/book/cart";
-            return;
-        }
+        });
     });
-
-    loadCirculationStatus();
-
-    // ==========================
-    // 리뷰 상태 (기존)
-    // ==========================
-    const ratingAvgEl = document.getElementById('ratingAvg');
-    const reviewCntEl = document.getElementById('reviewCnt');
-
-    function fmtAvg(v){
-        const n = Number(v);
-        if (!Number.isFinite(n)) return "0.0";
-        return n.toFixed(1);
-    }
-
-    async function loadReviewStatus(){
-        try{
-            const res = await fetch(`/book/reviewstatus/${encodeURIComponent(isbn13)}`, {
-                method: 'GET',
-                headers: { 'Accept': 'application/json' }
-            });
-
-            const ct = res.headers.get('content-type') || '';
-            if(!res.ok) return;
-            if(!ct.includes('application/json')) return;
-
-            const dto = await res.json();
-            if(!dto) return;
-
-            if(ratingAvgEl) ratingAvgEl.textContent = fmtAvg(dto.ratingAvg);
-            if(reviewCntEl) reviewCntEl.textContent = String(dto.reviewCnt ?? 0);
-
-        }catch(e){
-            console.error('reviewstatus error:', e);
-        }
-    }
-    loadReviewStatus();
 </script>
+
+
 <div th:replace="fragments/footer :: footer"></div>
 </body>
-
 </html>

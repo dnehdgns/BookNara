@@ -47,6 +47,7 @@ public class BookDetailService {
         view.setGenrePath(genrePath);
 
         // 5) 전자책/종이책  링크
+        // 5) 전자책/종이책 링크 계산
         String pairIsbn = calcPairIsbn(detail.getIsbn13(), detail.getEbookYn());
 
         if (pairIsbn != null && !pairIsbn.equals(detail.getIsbn13())) {
@@ -54,7 +55,6 @@ public class BookDetailService {
             if (cnt > 0) {
                 view.setPairYn("Y");
                 view.setPairIsbn13(pairIsbn);
-                view.setPairLabel("Y".equalsIgnoreCase(detail.getEbookYn()) ? "종이책 보기" : "전자책 보기");
             } else {
                 view.setPairYn("N");
             }

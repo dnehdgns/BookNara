@@ -56,4 +56,62 @@
             LIMIT #{offset}, #{size}
     </select>
 
+
+    <select id="existsReturnedLend" resultType="int">
+        SELECT CASE WHEN EXISTS (
+            SELECT 1
+            FROM LENDS
+            WHERE USER_ID = #{userId}
+              AND ISBN13  = #{isbn13}
+              AND RETURN_DONE_AT IS NOT NULL
+        ) THEN 1 ELSE 0 END
+    </select>
+
+    <select id="selectMyReviewFeedId" resultType="string">
+        SELECT FEED_ID
+        FROM FEEDS
+        WHERE USER_ID = #{userId}
+          AND ISBN13  = #{isbn13}
+          AND FEED_CATEGORY = 'REVIEW'
+          AND IS_DELETED = 'N'
+          AND IS_BLIND   = 'N'
+            LIMIT 1
+    </select>
+
+    <insert id="insertReviewFeed">
+        INSERT INTO FEEDS (
+            FEED_ID, USER_ID, ISBN13, FEED_CATEGORY,
+            FEED_TITLE, CONTENT, FEED_STATUS,
+            IS_BLIND, IS_DELETED, CREATED_AT
+        ) VALUES (
+                     #{feedId}, #{userId}, #{isbn13}, 'REVIEW',
+                     #{title}, #{content}, 0,
+                     'N', 'N', NOW()
+                 )
+    </insert>
+
+    <insert id="insertReviewDetail">
+        INSERT INTO REVIEW_DETAIL (FEED_ID, RATE)
+        VALUES (#{feedId}, #{rate})
+    </insert>
+
+    <update id="updateReviewFeedByOwner">
+        UPDATE FEEDS
+        SET FEED_TITLE = #{title},
+            CONTENT    = #{content},
+            UPDATED_AT = NOW()
+        WHERE FEED_ID = #{feedId}
+          AND USER_ID = #{userId}
+          AND FEED_CATEGORY = 'REVIEW'
+          AND IS_DELETED = 'N'
+    </update>
+
+    <update id="updateReviewDetail">
+        UPDATE REVIEW_DETAIL
+        SET RATE = #{rate}
+        WHERE FEED_ID = #{feedId}
+    </update>
+
+
+
 </mapper>

@@ -1,6 +1,7 @@
 package com.booknara.booknaraPrj.bookcart.service;
 
 import com.booknara.booknaraPrj.bookcart.dto.BookCartDTO;
+import com.booknara.booknaraPrj.bookcart.dto.LendQuotaDTO;
 import com.booknara.booknaraPrj.bookcart.mapper.BookCartMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -39,6 +40,32 @@ public class BookCartService {
     public List<BookCartDTO> list(String userId) {
         return mapper.selectList(userId);
     }
+
+    public LendQuotaDTO getLendQuota(String userId) {
+        LendQuotaDTO dto = new LendQuotaDTO();
+
+        Integer maxObj = mapper.selectMaxLendCount();
+        int max = (maxObj == null ? 5 : maxObj);
+        if (max <= 0) max = 5;
+
+        int current = mapper.countMyActiveLends(userId);
+        int cart = mapper.countMyCart(userId);
+
+
+        int available = Math.max(max - current, 0); // 남은 대여 가능(장바구니 반영 전)
+
+        dto.setMaxLendCount(max);
+        dto.setCurrentLendCount(current);
+        dto.setCartCount(cart);
+        dto.setAvailableCount(available);
+
+        return dto;
+    }
+
+    public boolean isInCart(String userId, String isbn13) {
+        return mapper.existsByIsbn(userId, isbn13) > 0;
+    }
+
 
 
 }
