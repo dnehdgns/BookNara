@@ -67,15 +67,15 @@
 
             <div class="right">
                 <div class="icon-row">
-                    <form action="/books/search" method="get" class="search-form">
-                        <div class="search-bar">
-
+                    <div class="search-bar">
+                        <form th:action="@{/book/search}" method="get">
                             <input type="text" name="keyword">
-                            <button type="submit" class="search-btn">
+                            <button class="search-btn" type="submit">
                                 <img th:src="@{/images/icon1.png}">
                             </button>
-                        </div>
-                    </form>
+                        </form>
+                    </div>
+
 
                     <div class="after-login icon-group" sec:authorize="isAuthenticated()">
                         <div class="icon"><a th:href="@{/book/cart}">🛒</a></div>

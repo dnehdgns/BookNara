@@ -26,16 +26,16 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
-
-
         http
                 .csrf(csrf -> csrf.disable())
 
-
-
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.GET,
+                                "/book/review/list"
+                        ).permitAll()
+
                         .requestMatchers(
-                                "/home",                 // 메인(비로그인 허용이면)
+                                "/home",
                                 "/users/login",
                                 "/users/signup",
                                 "/users/find-account",
@@ -43,13 +43,18 @@ public class SecurityConfig {
                                 "/users/check-id",
                                 "/users/check-profile",
                                 "/users/social/**",
-                                "/book/search/**",
+
+                                "/book/search",
                                 "/book/search/list",
-                                "/api/bookmarks/**",
                                 "/book/detail/**",
                                 "/book/genres/**",
+
                                 "/book/reviewstatus/**",
                                 "/book/circulation/status",
+
+                                "/api/bookmarks/**",
+                                "/api/users/**",
+
                                 "/oauth2/**",
                                 "/login/oauth2/**",
                                 "/api/users/**",
@@ -72,18 +77,20 @@ public class SecurityConfig {
                                 "/users/verify-code",
                                 "/users/reset-password"
                         ).permitAll()
+
                         .anyRequest().authenticated()
                 )
 
                 .formLogin(form -> form
-                        .loginPage("/users/login")        // ⭐ 로그인 페이지
-                        .loginProcessingUrl("/users/login") // ⭐ POST 로그인 처리
-                        .usernameParameter("userId")     // ⭐ USER_ID
-                        .passwordParameter("password")   // ⭐ PASSWORD
+                        .loginPage("/users/login")
+                        .loginProcessingUrl("/users/login")
+                        .usernameParameter("userId")
+                        .passwordParameter("password")
                         .successHandler(loginSuccessHandler)
                         .failureUrl("/users/login?error")
                         .permitAll()
                 )
+
                 .oauth2Login(oauth -> oauth
                         .loginPage("/users/login")
                         .userInfoEndpoint(userInfo ->
@@ -91,10 +98,6 @@ public class SecurityConfig {
                         )
                         .successHandler(customOAuth2SuccessHandler)
                 )
-
-
-
-
 
                 .logout(logout -> logout
                         .logoutUrl("/logout")
