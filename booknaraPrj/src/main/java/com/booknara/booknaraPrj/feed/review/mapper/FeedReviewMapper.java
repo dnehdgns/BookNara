@@ -40,4 +40,17 @@ public interface FeedReviewMapper {
 
     int updateReviewDetail(@Param("feedId") String feedId,
                            @Param("rate") int rate);
+
+    List<ReviewItemDTO> selectPageByIsbnWithMine(
+            @Param("isbn13") String isbn13,
+            @Param("userId") String userId,
+            @Param("offset") int offset,
+            @Param("size") int size
+    );
+
+    String selectIsbnByFeedId(@Param("feedId") String feedId);
+
+    int deleteReviewFeedByOwner(@Param("feedId") String feedId,
+                                @Param("userId") String userId);
+
 }

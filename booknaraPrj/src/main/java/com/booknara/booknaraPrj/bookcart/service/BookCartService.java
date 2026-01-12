@@ -2,9 +2,11 @@ package com.booknara.booknaraPrj.bookcart.service;
 
 import com.booknara.booknaraPrj.bookcart.dto.BookCartDTO;
 import com.booknara.booknaraPrj.bookcart.dto.LendQuotaDTO;
+import com.booknara.booknaraPrj.bookcart.dto.UserAddressDTO;
 import com.booknara.booknaraPrj.bookcart.mapper.BookCartMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -64,6 +66,15 @@ public class BookCartService {
 
     public boolean isInCart(String userId, String isbn13) {
         return mapper.existsByIsbn(userId, isbn13) > 0;
+    }
+
+    public UserAddressDTO getMyDefaultAddress(String userId) {
+        return mapper.selectMyDefaultAddress(userId);
+    }
+
+    @Transactional
+    public void saveMyDefaultAddress(UserAddressDTO dto) {
+        mapper.updateMyDefaultAddress(dto);
     }
 
 

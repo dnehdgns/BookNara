@@ -1,6 +1,7 @@
 package com.booknara.booknaraPrj.bookcart.mapper;
 
 import com.booknara.booknaraPrj.bookcart.dto.BookCartDTO;
+import com.booknara.booknaraPrj.bookcart.dto.UserAddressDTO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -32,6 +33,13 @@ public interface BookCartMapper {
     Integer selectMaxLendCount();
 
     //장바구니 담김 여부
-    int existsByIsbn(String userId, String isbn13);
+    int existsByIsbn(@Param("userId") String userId,
+                     @Param("isbn13") String isbn13);
+
+
+    //유저 주소 삽입
+    UserAddressDTO selectMyDefaultAddress(@Param("userId") String userId);
+    int updateMyDefaultAddress(UserAddressDTO dto);
+
 
 }

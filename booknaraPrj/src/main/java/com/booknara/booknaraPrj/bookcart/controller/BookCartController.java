@@ -1,5 +1,6 @@
 package com.booknara.booknaraPrj.bookcart.controller;
 
+import com.booknara.booknaraPrj.bookcart.dto.UserAddressDTO;
 import com.booknara.booknaraPrj.bookcart.service.BookCartService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -66,5 +67,43 @@ public class BookCartController {
     @ResponseBody
     public void clear(Authentication auth) {
         service.clear(getUserId(auth));
+    }
+
+    @GetMapping("/address/default")
+    @ResponseBody
+    public java.util.Map<String, Object> getDefaultAddress(Authentication auth) {
+        String userId = getUserId(auth);
+
+        UserAddressDTO dto = service.getMyDefaultAddress(userId);
+
+        boolean exists = dto != null
+                && dto.getZipcode() != null && !dto.getZipcode().isBlank()
+                && dto.getAddr() != null && !dto.getAddr().isBlank()
+                && dto.getDetailAddr() != null && !dto.getDetailAddr().isBlank();
+
+        return java.util.Map.of(
+                "exists", exists,
+                "data", dto
+        );
+    }
+
+    /** 기본주소 저장 */
+    @PostMapping("/address/save-default")
+    @ResponseBody
+    public java.util.Map<String, Object> saveDefaultAddress(@RequestParam String zipcode,
+                                                            @RequestParam String addr,
+                                                            @RequestParam String detailAddr,
+                                                            Authentication auth) {
+        String userId = getUserId(auth);
+
+        UserAddressDTO dto = new UserAddressDTO();
+        dto.setUserId(userId);
+        dto.setZipcode(zipcode);
+        dto.setAddr(addr);
+        dto.setDetailAddr(detailAddr);
+
+        service.saveMyDefaultAddress(dto);
+
+        return java.util.Map.of("ok", true);
     }
 }

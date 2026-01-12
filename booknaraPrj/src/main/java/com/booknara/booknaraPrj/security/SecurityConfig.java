@@ -30,7 +30,10 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
 
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.GET, "/book/review/permission").permitAll()
+                        .requestMatchers(HttpMethod.GET,
+                                "/book/review/list"
+                        ).permitAll()
+
                         .requestMatchers(
                                 "/home",
                                 "/users/login",

@@ -9,13 +9,10 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Gamja+Flower&display=swap');
 
-        /* =========================================
-           1. 공통 변수 및 레이아웃
-           ========================================= */
         :root{
-            --page-max: 1440px;      /* 전체 페이지 폭 */
-            --content-max: 1280px;   /* 기본 컨텐츠 폭 */
-            --inner-max: 1120px;     /* 내부 컨텐츠 폭(도서소개/리뷰/상단영역 공통) */
+            --page-max: 1440px;
+            --content-max: 1280px;
+            --inner-max: 1120px;
             --gap: 24px;
             --radius: 10px;
 
@@ -28,34 +25,16 @@
             --line: #e5e5e5;
             --shadow-soft: 0 4px 12px rgba(0,0,0,0.03);
 
-            /* ✅ 오른쪽(KPI/토글/버튼 묶음)만 아래로 내리는 오프셋 */
-            --purchase-offset: 170px; /* 80~180 추천. 스샷처럼 맞추려면 여기 숫자만 조절 */
+            --purchase-offset: 170px;
         }
 
         body { margin:0; font-family: Arial, sans-serif; background: #fff; }
         .wrap { max-width: var(--page-max); margin: 0 auto; padding: 24px 16px; }
 
-        .wrap-inner{
-            width: min(var(--content-max), 100%);
-            margin: 0 auto;
-            display: block;
-        }
+        .wrap-inner{ width: min(var(--content-max), 100%); margin: 0 auto; display: block; }
+        .center { width: 100%; display: flex; flex-direction: column; }
+        .section-inner{ width: min(var(--inner-max), 100%); margin: 0 auto; }
 
-        .center {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* ✅ 도서소개/리뷰/상단영역 모두에 적용할 "내부 컨텐츠" 폭 */
-        .section-inner{
-            width: min(var(--inner-max), 100%);
-            margin: 0 auto;
-        }
-
-        /* =========================================
-           2. Crumbbar
-           ========================================= */
         .crumbbar {
             margin: 0 0 30px;
             background:#fff;
@@ -76,24 +55,11 @@
             color: var(--accent);
         }
 
-        .crumb-home {
-            display:inline-flex; align-items:center; gap:6px;
-            text-decoration: none; cursor:pointer;
-        }
-
-        .crumb-link {
-            border: none; background: transparent; padding: 0; margin: 0;
-            cursor:pointer;
-            text-decoration: none;
-        }
+        .crumb-home { display:inline-flex; align-items:center; gap:6px; text-decoration: none; cursor:pointer; }
+        .crumb-link { border: none; background: transparent; padding: 0; margin: 0; cursor:pointer; text-decoration: none; }
         .crumb-link:hover { text-decoration: underline; }
         .crumb-current { cursor: default; text-decoration: none; }
 
-        /* =========================================
-           3. 상단 상세 영역(표지+우측 정보)
-           ========================================= */
-
-        /* ✅ 상단도 도서소개/리뷰처럼 "내부만" 줄이고 구분선은 유지 */
         .detail-section{
             border-bottom: 1px solid var(--line);
             padding-bottom: 40px;
@@ -107,7 +73,6 @@
             align-items: start;
         }
 
-        /* 표지 이미지 */
         .cover-area { position: relative; }
         .cover{
             width: 100%;
@@ -122,7 +87,6 @@
             box-shadow: var(--shadow-soft);
         }
 
-        /* ✅ 이미지 호버 효과 제거 */
         .cover img{
             width:100%;
             height:100%;
@@ -133,7 +97,7 @@
         }
 
         .badge-ebook-ribbon{
-            position: absolute; right: 20px; top: -8px; width: 55px; height: 85px;
+            position: absolute; right: 45px; top: 0px; width: 55px; height: 85px;
             border-radius: 4px 4px 12px 12px;
             display:flex; align-items:center; justify-content:center;
             background:#63BCD9; color:#fff;
@@ -147,7 +111,6 @@
             user-select: none;
         }
 
-        /* 우측 정보 패널 */
         .info-pane{
             display: flex;
             flex-direction: column;
@@ -160,12 +123,8 @@
         .meta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; color: var(--muted); font-size: 15px; }
         .meta-divider { width: 1px; height: 12px; background: #ddd; display: inline-block; }
 
-        /* ✅ 오른쪽 KPI/토글/버튼 묶음만 아래로 내리기 */
-        .purchase-box{
-            margin-top: var(--purchase-offset);
-        }
+        .purchase-box{ margin-top: var(--purchase-offset); }
 
-        /* KPI (Status Bar) */
         .status-bar {
             background: var(--light-bg);
             border: 1px solid var(--line);
@@ -182,7 +141,6 @@
         .status-value { font-size: 22px; font-weight: 800; color: var(--text); }
         .status-value .total { font-size: 16px; color: #999; font-weight: 500; }
 
-        /* 포맷 토글 */
         .format-group { display: flex; gap: 14px; margin-bottom: 14px; }
         .format-item {
             flex: 1;
@@ -207,7 +165,6 @@
         .format-item.disabled { background: #f9f9f9; color: #ccc; border-color: #eee; cursor: default; pointer-events: none; }
         .check-icon { font-size: 1.1em; }
 
-        /* 버튼 영역 */
         .action-area { margin-top: 0; display: flex; flex-direction: column; gap: 14px; }
         .main-buttons { display: grid; grid-template-columns: 1fr 2fr; gap: 14px; height: 56px; }
         #rentActions { display: contents; }
@@ -228,13 +185,8 @@
             transition: all 0.2s ease;
         }
         .btn:hover { filter: brightness(0.98); }
-        .btn-primary, .btn-addcart, .btn-rsv, .btn-extend { background: var(--accent); color: #fff; box-shadow: 0 4px 10px rgba(220, 162, 68, 0.2); }
-        .btn-primary:hover, .btn-addcart:hover, .btn-rsv:hover { background: #c89035; transform: translateY(-1px); }
         .btn:disabled { background: #f0f0f0; border-color: #ddd; color: #aaa; cursor: not-allowed; box-shadow: none; }
 
-        /* =========================
-   Share / Bookmark buttons
-   ========================= */
         .sub-buttons{
             display:flex;
             justify-content:flex-end;
@@ -243,7 +195,6 @@
             flex-wrap: wrap;
         }
 
-        /* 기존 btn-text를 "pill button"으로 업그레이드 */
         .btn-text{
             background:#fff;
             border: 1px solid var(--line);
@@ -268,49 +219,26 @@
             box-shadow: 0 8px 18px rgba(0,0,0,0.06);
         }
 
-        .btn-text:active{
-            transform: translateY(0);
-            box-shadow: none;
-        }
+        .btn-text:active{ transform: translateY(0); box-shadow: none; }
 
-        .btn-text .btn-ico{
-            font-size: 16px;
-            line-height: 1;
-        }
+        .btn-text .btn-ico{ font-size: 16px; line-height: 1; }
+        .btn-text .btn-label{ line-height: 1; }
 
-        .btn-text .btn-label{
-            line-height: 1;
-        }
+        .btn-share{ border-color: rgba(220,162,68,.35); }
+        .btn-share:hover{ border-color: rgba(220,162,68,.55); }
 
-        /* 공유 버튼: 살짝 포인트 */
-        .btn-share{
-            border-color: rgba(220,162,68,.35);
-        }
-        .btn-share:hover{
-            border-color: rgba(220,162,68,.55);
-        }
-
-        /* 북마크 버튼: 기본은 은은 */
-        .btn-bookmark{
-            border-color: #e7e7e7;
-        }
-
-        /* ✅ 북마크 활성 상태(북마크됨) */
+        .btn-bookmark{ border-color: #e7e7e7; }
         .btn-bookmark.active{
             background: rgba(220,162,68,.14);
             border-color: rgba(220,162,68,.55);
             color: var(--accent);
             box-shadow: 0 10px 20px rgba(220,162,68,.16);
         }
-
         .btn-bookmark.active:hover{
             background: rgba(220,162,68,.18);
             border-color: rgba(220,162,68,.70);
         }
 
-        /* =========================================
-           4. 컨텐츠 섹션(도서소개/리뷰)
-           ========================================= */
         .content-section { margin-top: 0; padding-top: 0; }
         .sec-inner{
             width: min(var(--inner-max), 100%);
@@ -346,14 +274,9 @@
             .sub-buttons { justify-content: center; }
             .main-buttons { grid-template-columns: 1fr; height: auto; }
             .main-buttons .btn{ height: 56px; }
-
-            /* 모바일에서는 아래로 내리지 않음 */
             .purchase-box{ margin-top: 0; }
         }
 
-        /* =========================
-   My Review Box
-   ========================= */
         .my-review-card{
             border: 1px solid var(--line);
             border-radius: var(--radius);
@@ -370,35 +293,12 @@
             border-bottom: 1px solid var(--line);
             margin-bottom: 12px;
         }
-        .my-review-title{
-            font-weight: 900;
-            font-size: 16px;
-        }
-        .my-review-msg{
-            font-size: 13px;
-            color: var(--muted);
-        }
-        .my-review-form{
-            display:flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .my-review-row{
-            display:flex;
-            align-items:center;
-            gap: 10px;
-        }
-        .my-review-label{
-            font-weight: 800;
-            font-size: 14px;
-            color: var(--muted);
-            width: 44px;
-        }
-        .my-review-select{
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            padding: 8px 10px;
-        }
+        .my-review-title{ font-weight: 900; font-size: 16px; }
+        .my-review-msg{ font-size: 13px; color: var(--muted); }
+        .my-review-form{ display:flex; flex-direction: column; gap: 10px; }
+        .my-review-row{ display:flex; align-items:center; gap: 10px; }
+        .my-review-label{ font-weight: 800; font-size: 14px; color: var(--muted); width: 44px; }
+        .my-review-select{ border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
         .my-review-input, .my-review-textarea{
             border: 1px solid var(--line);
             border-radius: 10px;
@@ -406,10 +306,79 @@
             font-size: 14px;
         }
         .my-review-textarea{ resize: vertical; }
-        .btn-review{
-            background: var(--accent);
-            color: #fff;
+        .btn-review{ background: var(--accent); color: #fff; }
+
+        .review-meta-right{ display:flex; align-items:center; gap:10px; }
+        .review-actions{ display:flex; gap:8px; align-items:center; }
+        .review-act{
+            border:1px solid var(--line);
+            background:#fff;
+            color: var(--muted);
+            font-weight: 800;
+            font-size: 12px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            cursor:pointer;
         }
+        .review-act:hover{ background:#fafafa; color: var(--text); border-color:#d8d8d8; }
+        .review-act.danger{ border-color: rgba(255,0,0,.18); }
+        .review-act.danger:hover{ border-color: rgba(255,0,0,.32); }
+        .review-meta{
+            display:flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        .review-meta-left{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            min-width: 0;
+        }
+
+        .review-rate{
+            color: var(--accent);
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .review-author{
+            font-size: 13px;
+            color: #777;
+            white-space: nowrap;
+        }
+
+        .review-meta-right{
+            display:flex;
+            align-items:center;
+            gap:8px;
+        }
+
+        .review-head-left{
+            display:flex;
+            align-items:center;
+            gap:12px;
+            flex-wrap:wrap;
+        }
+
+        .review-head-kpi{
+            display:flex;
+            align-items:center;
+            gap:8px;
+            font-size:16px;
+            font-weight:normal;
+        }
+
+        .review-head-right{
+            display:flex;
+            align-items:center;
+            gap:10px;
+        }
+
+
 
     </style>
 </head>
@@ -419,7 +388,6 @@
 
 <div class="wrap">
     <div class="wrap-inner">
-
         <main class="center">
 
             <div class="crumbbar">
@@ -430,15 +398,14 @@
 
                     <span th:if="${view.genrePath != null and view.genrePath.crumbs != null and !view.genrePath.crumbs.isEmpty()}"
                           th:each="c, st : ${view.genrePath.crumbs}">
-                        <span class="crumb-sep">&rsaquo;</span>
-                        <a th:href="@{/book/search(mall=${view.genrePath.mall}, parentGenreId=${c.genreId})}"
-                           th:text="${#strings.replace(c.genreNm, '_', '')}"
-                           th:classappend="${st.last} ? 'crumb-current' : 'crumb-link'">장르</a>
-                    </span>
+            <span class="crumb-sep">&rsaquo;</span>
+            <a th:href="@{/book/search(mall=${view.genrePath.mall}, parentGenreId=${c.genreId})}"
+               th:text="${#strings.replace(c.genreNm, '_', '')}"
+               th:classappend="${st.last} ? 'crumb-current' : 'crumb-link'">장르</a>
+          </span>
                 </div>
             </div>
 
-            <!-- ✅ 상단 상세 영역 -->
             <div class="detail-section">
                 <div class="section-inner">
                     <div class="detail-container">
@@ -454,7 +421,6 @@
                         </div>
 
                         <div class="info-pane">
-
                             <div class="header-section">
                                 <h1 class="title" th:text="${view.bookDetailDTO.bookTitle}">도서 제목</h1>
                                 <div class="meta-row">
@@ -466,7 +432,6 @@
                                 </div>
                             </div>
 
-                            <!-- ✅ KPI/토글/버튼 덩어리만 아래로 내리기 -->
                             <div class="purchase-box">
 
                                 <div class="status-bar" id="kpiBox">
@@ -526,7 +491,6 @@
                                             <span class="btn-label">공유하기</span>
                                         </button>
 
-
                                         <button id="btnBookmark"
                                                 class="btn-text btn-bookmark"
                                                 type="button"
@@ -535,19 +499,16 @@
                                             <span class="btn-ico" id="bookmarkIcon" aria-hidden="true">☆</span>
                                             <span class="btn-label" id="bookmarkText">북마크</span>
                                         </button>
-
                                     </div>
                                 </div>
 
                             </div>
-                            <!-- ✅ purchase-box 끝 -->
-
                         </div>
+
                     </div>
                 </div>
             </div>
 
-            <!-- ✅ 도서 소개 -->
             <div class="content-section">
                 <div class="sec-inner">
                     <div class="sec-head">도서 소개</div>
@@ -555,22 +516,24 @@
                 </div>
             </div>
 
-            <!-- ✅ 리뷰 -->
             <div class="content-section">
                 <div class="sec-inner">
                     <div class="sec-head">
-                        리뷰
+                        <div class="review-head-left">
+                            <span>리뷰</span>
 
-                        <!-- 오른쪽: KPI + 리뷰작성 버튼(항시노출) -->
-                        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                            <div style="font-size: 16px; font-weight: normal; display: flex; align-items: center; gap: 8px;">
+                            <div class="review-head-kpi">
                                 <span style="color:var(--accent);">★</span>
                                 <strong id="ratingAvg"
                                         th:text="${view.reviewSummary != null ? view.reviewSummary.ratingAvg : 0.0}">0.0</strong>
-                                <span style="color:#aaa;">(<span id="reviewCnt"
-                                                                 th:text="${view.reviewSummary != null ? view.reviewSummary.reviewCnt : 0}">0</span>개)</span>
+                                <span style="color:#aaa;">
+        (<span id="reviewCnt"
+               th:text="${view.reviewSummary != null ? view.reviewSummary.reviewCnt : 0}">0</span>개)
+      </span>
                             </div>
+                        </div>
 
+                        <div class="review-head-right">
                             <button id="btnOpenReview" class="btn-text" type="button" title="리뷰 작성">
                                 <span class="btn-ico" aria-hidden="true">✍</span>
                                 <span class="btn-label" id="btnOpenReviewText">리뷰 작성</span>
@@ -578,7 +541,7 @@
                         </div>
                     </div>
 
-                    <!-- ✅ 내 리뷰 작성 박스 (클릭 후 permission 통과 시에만 display:block 처리) -->
+
                     <div id="myReviewBox" style="display:none; margin-top: 14px;">
                         <div class="my-review-card">
                             <div class="my-review-top">
@@ -606,24 +569,16 @@
                         </div>
                     </div>
 
+                    <div id="reviewList" class="review-grid"></div>
 
-                    <div class="review-grid" th:if="${view.reviewPreview != null and !view.reviewPreview.isEmpty()}">
-                        <div class="review-card" th:each="r : ${view.reviewPreview}">
-                            <div class="review-meta">
-                                <span class="review-rate">★ <span th:text="${r.rate}">5</span></span>
-                                <span>
-                                    <span th:text="${r.profileNm}">작성자</span> ·
-                                    <span th:text="${#temporals.format(r.createdAt, 'yyyy.MM.dd')}">날짜</span>
-                                </span>
-                            </div>
-                            <div style="font-weight:bold; margin-bottom:6px;" th:text="${r.title}">제목</div>
-                            <div class="review-body" th:text="${r.content}">내용</div>
-                        </div>
+                    <div id="reviewEmpty"
+                         class="desc-text"
+                         style="text-align: center; color: #999; padding: 40px; display:none;">
+                        등록된 리뷰가 없습니다.
                     </div>
 
-                    <div class="desc-text" style="text-align: center; color: #999; padding: 40px;"
-                         th:if="${view.reviewPreview == null or view.reviewPreview.isEmpty()}">
-                        등록된 리뷰가 없습니다.
+                    <div id="reviewPager"
+                         style="margin-top:16px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
                     </div>
                 </div>
             </div>
@@ -635,8 +590,13 @@
 <script th:inline="javascript">
     document.addEventListener("DOMContentLoaded", () => {
 
+        let lastReviewItems = [];
+
         const isbn13 = /*[[${view.bookDetailDTO.isbn13}]]*/ "";
         const initialBookmarkedYn = /*[[${view.bookmarkedYn}]]*/ "N";
+
+        let reviewPage = 1;
+        const reviewSize = 5;
 
         // -----------------------------
         // 공통
@@ -647,7 +607,6 @@
         }
 
         async function fetchJson(url, options = {}, onAuth = "silent") {
-            // onAuth: "silent"(아무것도 안 함), "redirect"(로그인 이동)
             const res = await fetch(url, {
                 headers: {"Accept": "application/json", ...(options.headers || {})},
                 ...options
@@ -668,10 +627,7 @@
             const body = new URLSearchParams(bodyObj).toString();
             const res = await fetch(url, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "Accept": "application/json"
-                },
+                headers: {"Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json"},
                 body
             });
 
@@ -713,11 +669,7 @@
         btnBm?.addEventListener("click", async () => {
             btnBm.disabled = true;
             try {
-                // ✅ 클릭 액션은 401이면 로그인으로 보냄
-                const data = await fetchJson(`/api/bookmarks/${encodeURIComponent(isbn13)}/toggle`, {
-                    method: "POST"
-                }, "redirect");
-
+                const data = await fetchJson(`/api/bookmarks/${encodeURIComponent(isbn13)}/toggle`, { method: "POST" }, "redirect");
                 if (!data) return;
                 renderBookmark(data.bookmarkedYn);
             } catch (e) {
@@ -740,13 +692,8 @@
 
         async function loadCartStatus() {
             try {
-                // ✅ 백그라운드 GET은 401이어도 튕기지 않음
                 const data = await fetchJson(`/book/cart/${encodeURIComponent(isbn13)}/status`, {}, "silent");
-                if (!data) {
-                    // 비로그인이면 그냥 기본 상태 유지
-                    renderCartState(false);
-                    return;
-                }
+                if (!data) { renderCartState(false); return; }
                 renderCartState(!!data.inCart);
             } catch (e) {
                 console.error(e);
@@ -756,11 +703,7 @@
         btnCart?.addEventListener("click", async () => {
             btnCart.disabled = true;
             try {
-                // ✅ 클릭 액션은 401이면 로그인으로 보냄
-                const data = await fetchJson(`/book/cart/${encodeURIComponent(isbn13)}/toggle`, {
-                    method: "POST"
-                }, "redirect");
-
+                const data = await fetchJson(`/book/cart/${encodeURIComponent(isbn13)}/toggle`, { method: "POST" }, "redirect");
                 if (!data) return;
                 renderCartState(!!data.inCart);
             } catch (e) {
@@ -820,7 +763,7 @@
                 if (it.myExtendYn === "Y") {
                     setRentHint("반납예정일 7일 이내 & 연장 1회 미사용이면 연장 가능합니다.");
                     return `<button class="btn btn-extend" data-lend-id="${it.myLendId}">연장하기</button>
-                        <button class="btn" disabled style="background:#f0f0f0; border:none; color:#aaa;">대여중</button>`;
+                  <button class="btn" disabled style="background:#f0f0f0; border:none; color:#aaa;">대여중</button>`;
                 }
                 setRentHint("현재 이 도서를 대여 중입니다.");
                 return `<button class="btn" disabled>대여중</button>`;
@@ -834,7 +777,7 @@
             if (it.myRsvYn === "Y") {
                 setRentHint("이미 예약한 도서입니다.");
                 return `<button class="btn btn-rsv-cancel" data-rsv-id="${it.myRsvId}"
-                    style="background:#fff; color:var(--text); border-color:#ccc;">예약취소</button>`;
+                  style="background:#fff; color:var(--text); border-color:#ccc;">예약취소</button>`;
             }
 
             if (it.userBlockedYn === "Y" || it.userOverdueYn === "Y" || it.rsvLimitYn === "Y") {
@@ -864,11 +807,9 @@
 
         async function loadCirculationStatus() {
             try {
-                // ✅ 백그라운드 GET은 401이어도 튕기지 않음
                 const dto = await fetchJson(`/book/circulation/status?isbn13=${encodeURIComponent(isbn13)}`, {}, "silent");
 
                 if (!dto) {
-                    // 비로그인/권한 없으면 “로그인 후 이용”으로 바꿔서 확인중 탈출
                     setRentHint("로그인 후 대여/예약이 가능합니다.");
                     $rentActions.innerHTML = `<button class="btn btn-login">로그인 후 이용</button>`;
                     return;
@@ -924,7 +865,7 @@
         loadCirculationStatus();
 
         // -----------------------------
-        // 리뷰 KPI (조회만)
+        // 리뷰 KPI + 리스트
         // -----------------------------
         const ratingAvgEl = document.getElementById("ratingAvg");
         const reviewCntEl = document.getElementById("reviewCnt");
@@ -940,12 +881,168 @@
             }
         }
 
-        loadReviewStatus();
+        function esc(s){
+            return String(s ?? "").replace(/[&<>"']/g, m => (
+                {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]
+            ));
+        }
+        function fmtDate(iso){
+            if(!iso) return "";
+            const d = new Date(iso);
+            const y = d.getFullYear();
+            const m = String(d.getMonth()+1).padStart(2,'0');
+            const day = String(d.getDate()).padStart(2,'0');
+            return `${y}.${m}.${day}`;
+        }
 
+        async function loadReviewList(page = 1){
+            reviewPage = Math.max(1, Number(page || 1));
+
+            const dto = await fetchJson(
+                `/book/review/list?isbn13=${encodeURIComponent(isbn13)}&page=${reviewPage}&size=${reviewSize}`,
+                {},
+                "silent"
+            );
+            if (!dto) return;
+
+            console.log(dto.items?.[0]);
+
+            if (dto.summary) {
+                if (ratingAvgEl) ratingAvgEl.textContent = Number(dto.summary.ratingAvg ?? 0).toFixed(1);
+                if (reviewCntEl) reviewCntEl.textContent = String(dto.summary.reviewCnt ?? 0);
+            }
+
+            renderReviewList(dto.items || []);
+            renderReviewPager(dto.total ?? 0, dto.page ?? reviewPage, dto.size ?? reviewSize);
+        }
+
+
+        function isMine(r){
+            const v = (r?.mineYn ?? r?.myReviewYn ?? r?.myReview ?? r?.myYn);
+            const s = String(v ?? "").toUpperCase();
+            return s === "Y" || s === "TRUE" || s === "1";
+        }
+
+
+        function renderReviewList(items){
+            const listEl = document.getElementById("reviewList");
+            const emptyEl = document.getElementById("reviewEmpty");
+            if(!listEl || !emptyEl) return;
+
+            lastReviewItems = items || [];
+
+            if(!items || items.length === 0){
+                listEl.innerHTML = "";
+                emptyEl.style.display = "block";
+                return;
+            }
+            emptyEl.style.display = "none";
+
+            listEl.innerHTML = items.map(r => {
+                const mine = isMine(r);
+                const actions = mine ? `
+          <div class="review-actions">
+            <button type="button" class="review-act js-review-edit" data-feed-id="${esc(r.feedId)}">수정</button>
+            <button type="button" class="review-act danger js-review-del" data-feed-id="${esc(r.feedId)}">삭제</button>
+          </div>
+        ` : ``;
+
+                return `
+          <div class="review-card" data-feed-id="${esc(r.feedId)}">
+            <div class="review-meta">
+              <div class="review-meta-left">
+                <span class="review-rate">★ ${esc(r.rate)}</span>
+                <span class="review-author">
+                  ${esc(r.profileNm)} · ${esc(fmtDate(r.createdAt))}
+                </span>
+              </div>
+
+              ${actions ? `<div class="review-meta-right">${actions}</div>` : ``}
+            </div>
+
+
+            ${r.title ? `<div style="font-weight:bold; margin-bottom:6px;">${esc(r.title)}</div>` : ``}
+            <div class="review-body">${esc(r.content)}</div>
+          </div>
+        `;
+            }).join("");
+        }
+
+        function renderReviewPager(total, page, size){
+            const pagerEl = document.getElementById("reviewPager");
+            if(!pagerEl) return;
+
+            const totalElements = Number(total || 0);
+            const cur = Math.max(1, Number(page || 1));
+            const per = Math.max(1, Number(size || 5));
+            const totalPages = Math.max(1, Math.ceil(totalElements / per));
+
+            if(totalPages <= 1){
+                pagerEl.innerHTML = "";
+                return;
+            }
+
+            const mkBtn = (label, target, disabled=false, active=false) => `
+        <button type="button"
+          data-page="${target}"
+          ${disabled ? "disabled" : ""}
+          style="
+            border:1px solid var(--line);
+            background:${active ? "var(--accent)" : "#fff"};
+            color:${active ? "#fff" : "var(--text)"};
+            padding:8px 12px;
+            border-radius:999px;
+            font-weight:800;
+            cursor:${disabled ? "not-allowed" : "pointer"};
+          ">
+          ${label}
+        </button>
+      `;
+
+            const windowSize = 5;
+            const half = Math.floor(windowSize / 2);
+            let start = Math.max(1, cur - half);
+            let end = Math.min(totalPages, start + windowSize - 1);
+            start = Math.max(1, end - windowSize + 1);
+
+            let html = "";
+            html += mkBtn("이전", cur - 1, cur <= 1);
+
+            if(start > 1){
+                html += mkBtn("1", 1, false, cur === 1);
+                if(start > 2) html += `<span style="padding:8px 6px; color:#999;">…</span>`;
+            }
+
+            for(let p = start; p <= end; p++){
+                html += mkBtn(String(p), p, false, p === cur);
+            }
+
+            if(end < totalPages){
+                if(end < totalPages - 1) html += `<span style="padding:8px 6px; color:#999;">…</span>`;
+                html += mkBtn(String(totalPages), totalPages, false, cur === totalPages);
+            }
+
+            html += mkBtn("다음", cur + 1, cur >= totalPages);
+            pagerEl.innerHTML = html;
+        }
+
+        document.getElementById("reviewPager")?.addEventListener("click", (e) => {
+            const b = e.target.closest("button[data-page]");
+            if(!b || b.disabled) return;
+            const p = Number(b.dataset.page);
+            if(p >= 1) {
+                loadReviewList(p);
+                document.getElementById("reviewList")?.scrollIntoView({behavior:"smooth", block:"start"});
+            }
+        });
+
+        // 초기 로드
+        loadReviewStatus();
+        loadReviewList(reviewPage);
 
         // =============================
-// 리뷰 작성/저장
-// =============================
+        // 리뷰 작성/저장/수정/삭제
+        // =============================
         const btnOpenReview = document.getElementById("btnOpenReview");
         const myReviewBox = document.getElementById("myReviewBox");
         const reviewPermMsg = document.getElementById("reviewPermMsg");
@@ -955,32 +1052,43 @@
         const reviewTitleEl = document.getElementById("reviewTitle");
         const reviewContentEl = document.getElementById("reviewContent");
 
-// ✅ permission 확인 후 박스 열기
+        // 수정 모드 프리필용(클라 상태)
+        let editingFeedId = null;
+
+        function openMyReviewBox(modeText, msg){
+            myReviewBox.style.display = "block";
+            if (reviewPermMsg) reviewPermMsg.textContent = msg ?? "";
+            const titleEl = document.getElementById("myReviewTitleText");
+            if (titleEl) titleEl.textContent = modeText;
+            myReviewBox.scrollIntoView({behavior:"smooth", block:"start"});
+        }
+
+
         btnOpenReview?.addEventListener("click", async () => {
             try {
-                const perm = await fetchJson(
-                    `/book/review/permission?isbn13=${encodeURIComponent(isbn13)}`,
-                    {},
-                    "redirect"
-                );
+                const perm = await fetchJson(`/book/review/permission?isbn13=${encodeURIComponent(isbn13)}`, {}, "redirect");
                 if (!perm) return;
 
-                // ✅ DTO 기준으로 판정
                 const allowed = (perm.allowedYn === "Y");
                 const msg = (perm.message ?? "");
 
-                myReviewBox.style.display = "block";
-                reviewPermMsg.textContent = msg;
-
-                // ✅ 가능/불가능에 따라 버튼 제어
                 btnReviewSave.disabled = !allowed;
 
-                // (선택) 기존 리뷰 있으면 수정모드 표시
                 const hasReview = (perm.hasReviewYn === "Y");
-                const titleEl = document.getElementById("myReviewTitleText");
-                if (titleEl) titleEl.textContent = hasReview ? "리뷰 수정" : "리뷰 작성";
-                const btnLabel = document.getElementById("btnOpenReviewText");
-                if (btnLabel) btnLabel.textContent = hasReview ? "리뷰 수정" : "리뷰 작성";
+                editingFeedId = hasReview ? (perm.myFeedId ?? null) : null;
+
+                openMyReviewBox(hasReview ? "리뷰 수정" : "리뷰 작성", msg);
+
+                // (선택) 수정인데 내용 프리필하고 싶으면
+                // - 현재 페이지 리스트에 내 리뷰가 보이면 캐시에서 찾아 프리필
+                if (hasReview && editingFeedId) {
+                    const mine = lastReviewItems.find(x => String(x.feedId) === String(editingFeedId));
+                    if (mine) {
+                        if (reviewRateEl) reviewRateEl.value = String(mine.rate ?? 5);
+                        if (reviewTitleEl) reviewTitleEl.value = mine.title ?? "";
+                        if (reviewContentEl) reviewContentEl.value = mine.content ?? "";
+                    }
+                }
 
                 if (allowed) reviewContentEl?.focus();
             } catch (e) {
@@ -989,8 +1097,6 @@
             }
         });
 
-
-// ✅ JSON으로 /book/review/save 호출
         btnReviewSave?.addEventListener("click", async () => {
             const rate = Number(reviewRateEl?.value ?? 5);
             const title = (reviewTitleEl?.value ?? "").trim();
@@ -1015,27 +1121,92 @@
                 );
 
                 if (!data?.ok) {
-                    alert("리뷰 저장 실패");
+                    alert("리뷰가 등록되지 않았습니다.");
                     return;
                 }
 
-                alert("리뷰가 저장되었습니다.");
-                // KPI 재조회
-                await loadReviewStatus();
-                // 필요하면 새로고침(리뷰 리스트 미리보기까지 갱신하려면)
-                // location.reload();
+                editingFeedId = data.feedId ?? editingFeedId;
 
+                alert("리뷰가 등록되었습니다.");
+                await loadReviewList(1);
             } catch (e) {
                 console.error(e);
-                alert("리뷰 저장 중 오류가 발생했습니다.");
+                alert("리뷰 등록 중 오류가 발생했습니다.");
             } finally {
                 btnReviewSave.disabled = false;
             }
-
         });
-    });
-</script>
 
+        // 리스트 내부 수정/삭제
+        document.getElementById("reviewList")?.addEventListener("click", async (e) => {
+            const delBtn = e.target.closest(".js-review-del");
+            const editBtn = e.target.closest(".js-review-edit");
+
+            if (editBtn) {
+                const feedId = editBtn.dataset.feedId;
+                const item = lastReviewItems.find(x => String(x.feedId) === String(feedId));
+                if (!item) return;
+
+                // 권한 체크(백엔드 permission은 isbn기준, 여기선 UI 프리필만)
+                editingFeedId = feedId;
+
+                if (reviewRateEl) reviewRateEl.value = String(item.rate ?? 5);
+                if (reviewTitleEl) reviewTitleEl.value = item.title ?? "";
+                if (reviewContentEl) reviewContentEl.value = item.content ?? "";
+
+                // permission 한번 더 조회해서 메시지/버튼상태 정확히
+                try {
+                    const perm = await fetchJson(`/book/review/permission?isbn13=${encodeURIComponent(isbn13)}`, {}, "redirect");
+                    if (!perm) return;
+                    const allowed = (perm.allowedYn === "Y");
+                    btnReviewSave.disabled = !allowed;
+                    openMyReviewBox("리뷰 수정", perm.message ?? "");
+                    if (allowed) reviewContentEl?.focus();
+                } catch (err) {
+                    console.error(err);
+                    openMyReviewBox("리뷰 수정", "");
+                }
+                return;
+            }
+
+            if (delBtn) {
+                const feedId = delBtn.dataset.feedId;
+                if (!feedId) return;
+
+                if (!confirm("리뷰를 삭제할까요?")) return;
+
+                try {
+                    const data = await fetchJson(`/book/review/${encodeURIComponent(feedId)}`, { method: "DELETE" }, "redirect");
+                    if (!data?.ok) {
+                        alert("삭제 실패");
+                        return;
+                    }
+
+                    alert("삭제되었습니다.");
+
+                    // 삭제 후: 현재 페이지 유지가 자연스러움(페이지가 비면 1로 보정)
+                    await loadReviewList(Math.max(1, reviewPage));
+                    await loadReviewStatus();
+
+                    // 폼 열려있고 삭제한게 편집중이면 리셋
+                    if (editingFeedId && String(editingFeedId) === String(feedId)) {
+                        editingFeedId = null;
+                        if (reviewRateEl) reviewRateEl.value = "5";
+                        if (reviewTitleEl) reviewTitleEl.value = "";
+                        if (reviewContentEl) reviewContentEl.value = "";
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert("리뷰 삭제 중 오류가 발생했습니다.");
+                }
+            }
+        });
+
+    });
+
+
+
+</script>
 
 <div th:replace="fragments/footer :: footer"></div>
 </body>

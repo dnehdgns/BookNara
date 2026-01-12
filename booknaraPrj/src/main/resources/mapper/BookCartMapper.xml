@@ -80,6 +80,36 @@
           AND ISBN13  = #{isbn13}
     </select>
 
+    <!-- =========================================================
+     배송지(기본주소) - USERS에서 조회/저장
+     - 장바구니 우측 배송정보 영역에서 "기본주소 사용" / "기본주소로 저장"에 사용
+     ========================================================= -->
+
+    <!-- 기본주소 조회 (없으면 null/빈값으로 내려가게 됨) -->
+    <select id="selectMyDefaultAddress"
+            parameterType="string"
+            resultType="com.booknara.booknaraPrj.bookcart.dto.UserAddressDTO">
+        SELECT
+            ZIPCODE     AS zipcode,
+            ADDR        AS addr,
+            DETAIL_ADDR AS detailAddr
+        FROM USERS
+        WHERE USER_ID = #{userId}
+    </select>
+
+    <!-- 기본주소 저장(업데이트) -->
+    <update id="updateMyDefaultAddress"
+            parameterType="com.booknara.booknaraPrj.bookcart.dto.UserAddressDTO">
+        UPDATE USERS
+        SET
+            ZIPCODE = #{zipcode},
+            ADDR = #{addr},
+            DETAIL_ADDR = #{detailAddr},
+            UPDATED_AT = NOW()
+        WHERE USER_ID = #{userId}
+    </update>
+
+
 
 
 </mapper>

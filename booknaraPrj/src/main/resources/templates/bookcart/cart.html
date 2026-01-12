@@ -50,7 +50,6 @@
             color: var(--accent);
         }
 
-
         /* ===== 단계 ===== */
         .steps{
             display:flex;
@@ -83,7 +82,6 @@
             gap:10px;
             color: var(--accent);
         }
-
 
         /* ✅ 종이책/전자책 사이 간격 */
         .section-gap{
@@ -170,7 +168,7 @@
         }
         .btn-danger:hover{ background:#ffe9ea; border-color:#ffb9bc; }
 
-        /* ===== 우측(최종) ===== */
+        /* ===== 우측 ===== */
         .right{
             width:360px;
             height:fit-content;
@@ -336,7 +334,54 @@
             .right{ width:100%; }
             .meta{ max-width: 100%; }
         }
+
+        /* ===== 배송정보 버튼 전용 ===== */
+        .ship-actions{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            margin-bottom:10px;
+        }
+
+        /* 주소검색: 강조 버튼 */
+        .btn-primary{
+            border:1px solid rgba(220,162,68,.45);
+            background: var(--accent);
+            color:#fff;
+            box-shadow: 0 10px 22px rgba(220,162,68,.22);
+        }
+        .btn-primary:hover{ filter: brightness(0.98); }
+        .btn-primary:active{ transform: translateY(1px); }
+
+        /* 기본주소 사용: 텍스트 버튼(검은 글자, 배경/테두리 없음) */
+        .btn-text{
+            border:0 !important;
+            background:transparent !important;
+            color:#111 !important;
+            padding:8px 6px;         /* 너무 작지 않게 */
+            border-radius:10px;
+            font-weight:900;
+        }
+        .btn-text:hover{
+            background: rgba(0,0,0,.04) !important; /* 살짝만 호버 */
+        }
+
+        /* 기본주소로 저장: 우측으로 밀기 */
+        .btn-save-right{
+            margin-left:auto;
+        }
+
+        .save-wrap{
+            display: flex;
+            justify-content: flex-end; /* 👉 우측 끝 */
+            margin-top: 10px;
+        }
+
+
+
     </style>
+
+    <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 </head>
 
 <body>
@@ -418,8 +463,51 @@
                 </div>
             </div>
 
-            <!-- ✅ 우측 요약(상단 카드 제거, 전자책 배송 문구 제거, 배송비는 고정 3000) -->
             <div class="right">
+                <!-- ✅ 배송정보 -->
+                <div class="side-card" id="shipCard"
+                     th:if="${!#lists.isEmpty(paperItems)}"
+                     style="margin-bottom:12px;">
+
+                    <h3 class="side-title">
+                        배송정보
+                        <span class="chip" th:text="${#lists.isEmpty(paperItems) ? '전자책만' : '종이책 포함'}">종이책 포함</span>
+                    </h3>
+
+                    <hr class="side-divider"/>
+
+                    <div class="sum-list" style="padding:12px;">
+
+                        <div class="ship-actions">
+                            <button class="btn btn-primary" type="button" onclick="openPostcode()">주소검색</button>
+                            <button class="btn btn-text" type="button" onclick="useDefaultAddr()">기본주소 사용</button>
+                        </div>
+
+
+                        <div style="display:grid; gap:8px;">
+                            <input class="btn" style="text-align:left;" id="zip" placeholder="우편번호" readonly>
+                            <input class="btn" style="text-align:left;" id="addr" placeholder="기본주소" readonly>
+                            <input class="btn" style="text-align:left;" id="detail" placeholder="상세주소 입력">
+                        </div>
+                        <div class="save-wrap">
+                            <button class="btn btn-ghost btn-save-right"
+                                    type="button"
+                                    onclick="saveDefaultAddr()">
+                                기본주소로 저장
+                            </button>
+                        </div>
+
+
+                        <div id="addrEmptyMsg" class="warn-box" style="display:none; margin-top:10px;">
+                            저장된 주소가 없습니다.
+                        </div>
+
+                        <div class="hint" style="margin-top:10px;">
+                            * 종이책이 포함되면 배송지 입력 후 결제가 가능합니다.
+                        </div>
+                    </div>
+                </div>
+
                 <div class="side-card">
                     <h3 class="side-title">
                         결제 요약
@@ -455,7 +543,6 @@
                         </div>
                     </div>
 
-                    <!-- 초과 안내 -->
                     <div class="warn-box"
                          th:if="${quota != null and quota.availableCount < quota.cartCount}">
                         대여 가능 권수를 초과했습니다.<br/>
@@ -464,7 +551,6 @@
                         최대 <span th:text="${quota.maxLendCount}">5</span>권을 넘습니다.
                     </div>
 
-                    <!-- 결제 안내(전자책 배송 문구 제거) -->
                     <div class="ship-note">
                         <div class="i">i</div>
                         <div>
@@ -473,7 +559,6 @@
                         </div>
                     </div>
 
-                    <!-- 총 결제금액(배송비만) -->
                     <div class="total-box">
                         <div class="total-top">
                             <div class="total-label">총 결제금액</div>
@@ -489,10 +574,12 @@
                     </div>
 
                     <button class="cta"
+                            th:attr="data-base-disabled=${#lists.isEmpty(items) or (quota != null and quota.availableCount < quota.cartCount)}"
                             th:disabled="${#lists.isEmpty(items) or (quota != null and quota.availableCount < quota.cartCount)}"
                             onclick="goCheckout()">
                         결제하기
                     </button>
+
                 </div>
             </div>
 
@@ -500,7 +587,10 @@
     </div>
 </div>
 
-<script>
+<script th:inline="javascript">
+    // ----------------------------
+    // 기본 기능
+    // ----------------------------
     function removeItem(btn){
         fetch('/book/cart/remove',{
             method:'POST',
@@ -508,13 +598,145 @@
             body:'cartId=' + encodeURIComponent(btn.dataset.id)
         }).then(()=>location.reload());
     }
+
     function clearAll(){
         fetch('/book/cart/clear',{method:'POST'})
             .then(()=>location.reload());
     }
+
+    // 종이책 포함 여부(Thymeleaf)
+    const hasPaper = /*[[${!#lists.isEmpty(paperItems)}]]*/ false;
+
+    function getAddrState(){
+        const zip = document.getElementById('zip')?.value.trim() || '';
+        const addr = document.getElementById('addr')?.value.trim() || '';
+        const detail = document.getElementById('detail')?.value.trim() || '';
+        return { zip, addr, detail, ok: (zip && addr && detail) };
+    }
+
+    function syncCheckoutButton(){
+        const cta = document.querySelector('.cta');
+        if(!cta) return;
+
+        const baseDisabled = (cta.getAttribute('data-base-disabled') === 'true');
+        if (baseDisabled) return;
+
+        if(!hasPaper){
+            cta.disabled = false;
+            return;
+        }
+        const st = getAddrState();
+        cta.disabled = !st.ok;
+    }
+
     function goCheckout(){
+        if(hasPaper){
+            const st = getAddrState();
+            if(!st.ok){
+                alert('종이책 배송을 위해 주소를 입력해주세요.');
+                document.getElementById('detail')?.focus();
+                return;
+            }
+        }
         location.href='/book/order';
     }
+
+    // ✅ 입력될 때마다 버튼 동기화
+    document.addEventListener('input', (e)=>{
+        if(e.target && (e.target.id === 'detail' || e.target.id === 'zip' || e.target.id === 'addr')) {
+            syncCheckoutButton();
+        }
+    });
+
+    async function useDefaultAddr(){
+        const msg = document.getElementById('addrEmptyMsg');
+        if(msg) msg.style.display = 'none';
+
+        const res = await fetch('/book/cart/address/default', { method:'GET' });
+
+        if(res.status === 401){
+            alert('로그인이 필요합니다.');
+            location.href = '/users/login';
+            return;
+        }
+
+        const json = await res.json();
+
+        if(!json.exists || !json.data){
+            if(msg) msg.style.display = 'block';
+            if(document.getElementById('zip')) document.getElementById('zip').value = '';
+            if(document.getElementById('addr')) document.getElementById('addr').value = '';
+            if(document.getElementById('detail')) document.getElementById('detail').value = '';
+            syncCheckoutButton();
+            return;
+        }
+
+        document.getElementById('zip').value = json.data.zipcode || '';
+        document.getElementById('addr').value = json.data.addr || '';
+        document.getElementById('detail').value = json.data.detailAddr || '';
+        syncCheckoutButton();
+    }
+
+    function openPostcode(){
+        // 방어: 외부 스크립트 로딩 실패 대비
+        if(typeof daum === 'undefined' || !daum.Postcode){
+            alert('주소 검색 모듈 로딩에 실패했습니다.');
+            return;
+        }
+
+        new daum.Postcode({
+            oncomplete: function (data) {
+                document.getElementById('zip').value = data.zonecode || '';
+
+                const addr = (data.roadAddress && data.roadAddress !== '')
+                    ? data.roadAddress
+                    : (data.jibunAddress || '');
+
+                document.getElementById('addr').value = addr;
+
+                document.getElementById('detail').focus();
+                syncCheckoutButton();
+            }
+        }).open();
+    }
+
+    async function saveDefaultAddr(){
+        const st = getAddrState();
+        if(!st.zip || !st.addr || !st.detail){
+            alert('주소를 모두 입력해주세요.');
+            return;
+        }
+
+        const body = new URLSearchParams({
+            zipcode: st.zip,
+            addr: st.addr,
+            detailAddr: st.detail
+        });
+
+        const res = await fetch('/book/cart/address/save-default', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body
+        });
+
+        if(res.status === 401){
+            alert('로그인이 필요합니다.');
+            location.href='/users/login';
+            return;
+        }
+
+        if(!res.ok){
+            alert('기본주소 저장에 실패했습니다.');
+            return;
+        }
+
+        alert('기본주소로 저장되었습니다.');
+    }
+
+    // ✅ 초기 상태 버튼 동기화
+    window.addEventListener('DOMContentLoaded', () => {
+        syncCheckoutButton();
+    });
 </script>
 
 <div th:replace="fragments/footer :: footer"></div>

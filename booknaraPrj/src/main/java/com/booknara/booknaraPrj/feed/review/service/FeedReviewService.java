@@ -49,15 +49,16 @@ public class FeedReviewService {
     }
 
     /** ISBN별 리뷰 페이지 조회 */
-    public ReviewListDTO getPage(String isbn13, int page, int size) {
+    public ReviewListDTO getPage(String isbn13, int page, int size, String userId) {
         int safePage = Math.max(page, 1);
-        int safeSize = Math.min(Math.max(size, 1), 50); // 폭탄 방지
+        int safeSize = Math.min(Math.max(size, 1), 50);
         int offset = (safePage - 1) * safeSize;
 
         long total = mapper.countByIsbn(isbn13);
+
         List<ReviewItemDTO> items = (total == 0)
                 ? Collections.emptyList()
-                : mapper.selectPageByIsbn(isbn13, offset, safeSize);
+                : mapper.selectPageByIsbnWithMine(isbn13, userId, offset, safeSize); // ✅ userId 포함 쿼리
 
         ReviewListDTO dto = new ReviewListDTO();
         dto.setIsbn13(isbn13);
@@ -69,6 +70,7 @@ public class FeedReviewService {
 
         return dto;
     }
+
 
     /** 상세페이지 미리보기용 Top N (최신순) */
     public List<ReviewItemDTO> getTop(String isbn13, int topN) {
@@ -134,4 +136,18 @@ public class FeedReviewService {
             return myFeedId;
         }
     }
+
+    @Transactional
+    public void deleteMyReview(String feedId, String userId) {
+        if (userId == null || userId.isBlank()) throw new IllegalStateException("로그인이 필요합니다.");
+        if (feedId == null || feedId.isBlank()) throw new IllegalArgumentException("feedId 필요");
+
+        int updated = mapper.deleteReviewFeedByOwner(feedId, userId);
+        if (updated != 1) {
+            // 이미 삭제됐거나 / 남의 글 / 존재하지 않음
+            throw new IllegalStateException("본인 리뷰만 삭제할 수 있습니다.");
+        }
+
+    }
+
 }
