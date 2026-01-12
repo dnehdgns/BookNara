@@ -1,4 +1,10 @@
-<link rel="stylesheet" th:href="@{/css/footer.css}" xmlns:th="http://www.w3.org/1999/xhtml">
+<th:block
+        th:fragment="footer"
+        xmlns:th="http://www.thymeleaf.org"
+        xmlns:sec="http://www.thymeleaf.org/extras/spring-security6">
+
+    <!-- header 전용 CSS -->
+    <link rel="stylesheet" th:href="@{/css/footer.css}">
 
 <footer class="footer">
     <div class="footer-inner">
@@ -66,3 +72,4 @@
         </div>
     </div>
 </footer>
+</th:block>
