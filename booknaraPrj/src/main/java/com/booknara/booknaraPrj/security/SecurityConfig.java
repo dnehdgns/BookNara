@@ -37,6 +37,13 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/home",                 // 메인(비로그인 허용이면)
                                 "/users/login",
+
+                                "/event/**",
+                                "/information/**",
+                                "/guide",
+                                "/guideDetail",
+
+
                                 "/users/signup",
                                 "/users/find-account",
                                 "/users/signup-extra",
