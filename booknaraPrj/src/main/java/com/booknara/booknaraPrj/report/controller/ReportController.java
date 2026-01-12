@@ -5,6 +5,7 @@ import com.booknara.booknaraPrj.report.service.ReportService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -16,34 +17,29 @@ public class ReportController {
 
     private final ReportService reportService;
 
-    /** 이미 신고했는지 확인 */
-    @GetMapping("/exists")
-    public ResponseEntity<?> exists(@RequestParam String feedId, HttpSession session) {
-        String userId = (String) session.getAttribute("userId");
+    private String userId(Authentication auth) {
+        if (auth == null || auth instanceof org.springframework.security.authentication.AnonymousAuthenticationToken) {
+            return null;
+        }
+        return auth.getName();
+    }
 
+    @GetMapping("/exists")
+    public ResponseEntity<?> exists(@RequestParam String feedId, Authentication auth) {
+        String userId = userId(auth);
         if (userId == null || userId.isBlank()) {
-            return ResponseEntity
-                    .status(401)
-                    .body(Map.of("code", "UNAUTHORIZED"));
+            return ResponseEntity.status(401).body(Map.of("code", "UNAUTHORIZED"));
         }
 
         boolean reported = reportService.hasReported(userId, feedId);
-
-        return ResponseEntity.ok(Map.of(
-                "code", "OK",
-                "reported", reported
-        ));
+        return ResponseEntity.ok(Map.of("code", "OK", "reported", reported));
     }
 
-    /** 신고 등록 */
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody ReportCreateDTO dto, HttpSession session) {
-        String userId = (String) session.getAttribute("userId");
-
+    public ResponseEntity<?> create(@RequestBody ReportCreateDTO dto, Authentication auth) {
+        String userId = userId(auth);
         if (userId == null || userId.isBlank()) {
-            return ResponseEntity
-                    .status(401)
-                    .body(Map.of("code", "UNAUTHORIZED"));
+            return ResponseEntity.status(401).body(Map.of("code", "UNAUTHORIZED"));
         }
 
         try {
@@ -51,16 +47,14 @@ public class ReportController {
             return ResponseEntity.ok(Map.of("code", "OK"));
 
         } catch (IllegalStateException e) {
-            // 이미 신고한 경우
-            return ResponseEntity
-                    .badRequest()
-                    .body(Map.of("code", "ALREADY_REPORTED"));
+            if (e.getMessage() != null && e.getMessage().contains("본인 리뷰")) {
+                return ResponseEntity.badRequest().body(Map.of("code", "SELF_REPORT_NOT_ALLOWED"));
+            }
+            return ResponseEntity.badRequest().body(Map.of("code", "ALREADY_REPORTED"));
 
         } catch (IllegalArgumentException e) {
-            // 존재하지 않거나 삭제된 리뷰
-            return ResponseEntity
-                    .badRequest()
-                    .body(Map.of("code", "INVALID_TARGET"));
+            return ResponseEntity.badRequest().body(Map.of("code", "INVALID_TARGET"));
         }
     }
 }
+

@@ -32,6 +32,12 @@ public class ReportService {
             throw new IllegalArgumentException("존재하지 않거나 삭제된 리뷰입니다.");
         }
 
+        //자기글 신고 금지
+        String ownerId = reportMapper.selectFeedOwnerUserId(feedId);
+        if (ownerId != null && ownerId.equals(userId)) {
+            throw new IllegalStateException("본인 리뷰는 신고할 수 없습니다.");
+        }
+
         // 1) 이미 신고했는지 빠른 체크
         if (hasReported(userId, feedId)) {
             throw new IllegalStateException("이미 신고한 리뷰입니다.");

@@ -48,4 +48,14 @@
                  )
     </insert>
 
+    <!-- ✅ 신고 대상(feed)의 소유자 userId 조회 -->
+    <select id="selectFeedOwnerUserId" resultType="string">
+        SELECT USER_ID
+        FROM FEEDS
+        WHERE FEED_ID = #{feedId}
+          AND FEED_CATEGORY = 'REVIEW'
+            LIMIT 1
+    </select>
+
+
 </mapper>

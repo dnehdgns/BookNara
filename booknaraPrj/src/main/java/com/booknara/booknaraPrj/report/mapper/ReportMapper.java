@@ -15,4 +15,6 @@ public interface ReportMapper {
                      @Param("userId") String userId,
                      @Param("feedId") String feedId,
                      @Param("reportContent") String reportContent);
+
+    String selectFeedOwnerUserId(@Param("feedId") String feedId);
 }

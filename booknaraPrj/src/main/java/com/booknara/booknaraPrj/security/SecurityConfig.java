@@ -36,7 +36,8 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET,
-                                "/book/review/list"
+                                "/book/review/list",
+                                "/book/cart/*/status"
                         ).permitAll()
 
                         .requestMatchers(

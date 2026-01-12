@@ -659,6 +659,38 @@
             return res;
         }
 
+        async function postJson(url, bodyObj, onAuth = "redirect") {
+            const res = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify(bodyObj ?? {})
+            });
+
+            const ct = res.headers.get("content-type") || "";
+            const authFail = (res.status === 401 || res.status === 403 || ct.includes("text/html") || res.redirected);
+
+            if (authFail) {
+                if (onAuth === "redirect") goLoginReturnHere();
+                return null;
+            }
+
+            // 서버가 400/500을 JSON으로 내려줄 수도 있으니 json 먼저 시도
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                // 서버가 message 내려주면 그걸 쓰고, 아니면 상태코드로 처리
+                throw new Error(data.message || ("HTTP " + res.status));
+            }
+
+            return data;
+        }
+
+
+
+
         function esc(s){
             return String(s ?? "").replace(/[&<>"']/g, m => (
                 {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]
@@ -1119,32 +1151,23 @@
             const title = (reviewTitleEl?.value ?? "").trim();
             const content = (reviewContentEl?.value ?? "").trim();
 
-            if (!content) {
-                alert("리뷰 내용을 입력해주세요.");
-                reviewContentEl?.focus();
-                return;
-            }
+            if (!content) { alert("리뷰 내용을 입력해주세요."); reviewContentEl?.focus(); return; }
 
             btnReviewSave.disabled = true;
             try {
-                const data = await fetchJson(
-                    "/book/review/save",
-                    {
-                        method: "POST",
-                        headers: {"Content-Type": "application/json"},
-                    },
-                    "redirect"
-                );
+                const payload = { isbn13, rate, title, content };
+                const data = await postJson("/book/review/save", payload, "redirect");
+                if (!data) return;
 
-                if (!data?.ok) {
-                    alert("리뷰가 등록되지 않았습니다.");
+                if (!data.ok) {  // 서버가 {ok:true, feedId:...} 형태라고 가정
+                    alert(data.message || "리뷰가 등록되지 않았습니다.");
                     return;
                 }
 
                 editingFeedId = data.feedId ?? editingFeedId;
-
                 alert("리뷰가 등록되었습니다.");
                 await loadReviewList(1);
+                await loadReviewStatus();
             } catch (e) {
                 console.error(e);
                 alert("리뷰 등록 중 오류가 발생했습니다.");
@@ -1152,6 +1175,7 @@
                 btnReviewSave.disabled = false;
             }
         });
+
 
         // =============================
         // 신고 처리(추가)
@@ -1172,12 +1196,20 @@
         async function createReport(feedId, reason){
             const res = await fetch("/api/reports", {
                 method: "POST",
-                headers: {"Content-Type": "application/json", "Accept":"application/json"},
-                body: JSON.stringify({ feedId, reportContent: reason })
+                headers: {"Content-Type":"application/json","Accept":"application/json"},
+                body: JSON.stringify({ feedId, reportContent: reason.trim() })
             });
+
+            // 401이면 바로 로그인
+            if (res.status === 401) {
+                goLoginReturnHere();
+                return { res, data: { code:"UNAUTHORIZED" } };
+            }
+
             const data = await res.json().catch(() => ({}));
             return { res, data };
         }
+
 
         // 리스트 내부 수정/삭제/신고
         document.getElementById("reviewList")?.addEventListener("click", async (e) => {
@@ -1241,6 +1273,13 @@
                         markReported(reportBtn);
                         return;
                     }
+
+                    if (data.code === "SELF_REPORT_NOT_ALLOWED") {
+                        alert("본인 리뷰는 신고할 수 없습니다.");
+                        reportBtn.disabled = false;
+                        return;
+                    }
+
 
                     alert("신고 처리 중 오류가 발생했습니다.");
                     reportBtn.disabled = false;
