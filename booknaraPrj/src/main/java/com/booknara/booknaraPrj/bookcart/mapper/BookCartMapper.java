@@ -44,4 +44,7 @@ public interface BookCartMapper {
     //isbn별 대여 가능 여부
     Boolean isLendableByIsbn(@Param("isbn13") String isbn13);
 
+    // 배송 테이블 초기 데이터 생성
+    void insertDelivery(String lendId);
+
 }

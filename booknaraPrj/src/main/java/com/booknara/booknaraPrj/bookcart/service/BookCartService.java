@@ -102,18 +102,26 @@ public class BookCartService {
             throw new IllegalStateException("대여 가능 권수를 초과했습니다.");
         }
 
-        // 4) 종이책만 lend (전자책은 정책대로 처리)
+        // 4) 대여 실행 및 배송 등록
         for (var it : items) {
-            boolean isEbook = "Y".equalsIgnoreCase(it.getEbookYn());
-            if (!isEbook) {
-                circulationCommandService.lend(it.getIsbn13(), userId);
-            } else {
+            // 1. 대여 요청 후 결과 객체(DTO) 받기
+            com.booknara.booknaraPrj.bookcirculation.command.dto.LendResultDTO result
+                    = circulationCommandService.lend(it.getIsbn13(), userId);
+
+            // 2. 결과 객체에서 lendId 추출 (Getter 사용)
+            String lendId = result.getLendId();
+
+            // 3. 종이책이고, lendId가 정상적으로 있다면 배송 등록
+            if (!"Y".equalsIgnoreCase(it.getEbookYn()) && lendId != null) {
+                mapper.insertDelivery(lendId);
             }
         }
 
         // 5) 성공 시 카트 비우기
         clear(userId);
     }
+
+
 
 
 }

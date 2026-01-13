@@ -132,4 +132,12 @@ public class BookCartController {
         }
     }
 
+    @GetMapping("/result")
+    public String resultPage(Model model) {
+        // 주문완료
+        model.addAttribute("step", "DONE");
+
+        return "bookcart/result";
+    }
+
 }
