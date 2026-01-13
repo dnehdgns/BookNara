@@ -6,11 +6,19 @@ document.addEventListener("DOMContentLoaded", () => {
     const form = document.querySelector(".info-form");
     const editableInputs = document.querySelectorAll(".editable");
     const addressBtn = document.getElementById("addressBtn");
-
     const genreCards = document.querySelectorAll(".genre-card");
+
+    /* ================= 닉네임 DOM ================= */
+    const profileInput = document.getElementById("profileNm");
+    const originalProfileInput = document.getElementById("originalProfileNm");
+    const msg = document.getElementById("profileNmMsg");
 
     let editMode = false;
     let selectedGenres = [];
+    let profileNmValid = true; // ✅ 닉네임 중복 체크 상태
+
+    /* ================= 방어 코드 ================= */
+    if (!form || !editBtn) return;
 
     /* ================= 초기 장르 상태 수집 ================= */
     genreCards.forEach(card => {
@@ -19,38 +27,76 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    /* =================  submit 가드 추가 ================= */
-    form?.addEventListener("submit", () => {
-        editableInputs.forEach(input => input.disabled = false);
-        if (addressBtn) addressBtn.disabled = false;
-    });
-
-
-
     /* ================= 수정 버튼 ================= */
-    editBtn?.addEventListener("click", () => {
+    editBtn.addEventListener("click", () => {
         editMode = !editMode;
 
-        // 회원정보 input
         editableInputs.forEach(input => {
             input.disabled = !editMode;
             input.style.background = editMode ? "#fff" : "#f3f3f3";
         });
 
-        // 주소 버튼
         if (addressBtn) addressBtn.disabled = !editMode;
-
-        // 저장 버튼
         if (saveBtn) saveBtn.style.display = editMode ? "inline-block" : "none";
 
-        // 장르 수정 가능/불가
         genreCards.forEach(card => {
             card.classList.toggle("disabled", !editMode);
             card.dataset.editable = editMode ? "true" : "false";
         });
 
+        // 🔹 수정 모드 진입 시 닉네임 상태 초기화
+        if (editMode && msg) {
+            msg.textContent = "";
+            profileNmValid = true;
+        }
+
         editBtn.innerText = editMode ? "취소" : "수정";
     });
+
+    /* ================= 닉네임 중복 체크 ================= */
+    if (profileInput && originalProfileInput && msg) {
+
+        profileInput.addEventListener("blur", () => {
+            if (!editMode) return;
+
+            const profileNm = profileInput.value.trim();
+            const originalProfileNm = originalProfileInput.value;
+
+            if (!profileNm) return;
+
+            // ✅ 기존 닉네임이면 통과
+            if (profileNm === originalProfileNm) {
+                msg.textContent = "현재 사용 중인 닉네임입니다";
+                msg.className = "input-msg ok";
+                profileNmValid = true;
+                return;
+            }
+
+            fetch("/mypage/profile/check", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: new URLSearchParams({
+                    profileNm,
+                    originalProfileNm
+                })
+            })
+                .then(res => res.json())
+                .then(isAvailable => {
+                    profileNmValid = isAvailable;
+                    msg.textContent = isAvailable
+                        ? "사용 가능한 닉네임입니다"
+                        : "이미 사용 중인 닉네임입니다";
+                    msg.className = "input-msg " + (isAvailable ? "ok" : "fail");
+                })
+                .catch(() => {
+                    profileNmValid = false;
+                    msg.textContent = "닉네임 확인 중 오류 발생";
+                    msg.className = "input-msg fail";
+                });
+        });
+    }
 
     /* ================= 장르 클릭 ================= */
     genreCards.forEach(card => {
@@ -73,18 +119,19 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    /* ================= submit 시 disabled 해제 (최중요) ================= */
-    form?.addEventListener("submit", () => {
-        editableInputs.forEach(input => input.disabled = false);
-        if (addressBtn) addressBtn.disabled = false;
-    });
-
     /* ================= 저장 버튼 ================= */
     saveBtn?.addEventListener("click", async (e) => {
         e.preventDefault();
 
+        // 🔥 닉네임 중복 체크 실패 시 저장 차단
+        if (!profileNmValid) {
+            alert("닉네임 중복을 확인해주세요.");
+            profileInput?.focus();
+            return;
+        }
+
         try {
-            // 1️⃣ 장르 먼저 저장
+            // 1️⃣ 장르 저장
             const res = await fetch("/mypage/myinfo/genres", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -92,7 +139,10 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             if (!res.ok) throw new Error("genre save failed");
 
-            // 2️⃣ 회원정보 저장 (submit 이벤트에서 disabled 해제됨)
+            // 2️⃣ disabled 해제 후 submit
+            editableInputs.forEach(input => input.disabled = false);
+            if (addressBtn) addressBtn.disabled = false;
+
             form.submit();
 
         } catch (err) {
@@ -100,40 +150,4 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("저장 중 오류가 발생했습니다.");
         }
     });
-
 });
-
-/* ================= 다음 주소 API ================= */
-window.execDaumPostcode = function () {
-    if (!window.daum || !daum.Postcode) {
-        alert("다음 주소 API가 로드되지 않았습니다.");
-        return;
-    }
-
-    new daum.Postcode({
-        oncomplete: function (data) {
-
-            const zipcodeInput = document.querySelector("input[name='zipcode']");
-            const addrInput = document.querySelector("input[name='addr']");
-            const detailInput = document.querySelector("input[name='detailAddr']");
-
-            if (zipcodeInput) {
-                zipcodeInput.value = data.zonecode;
-            }
-
-            const baseAddr =
-                (data.roadAddress && data.roadAddress !== "")
-                    ? data.roadAddress
-                    : data.jibunAddress;
-
-            if (addrInput) {
-                addrInput.value = baseAddr;
-            }
-
-            // 상세주소로 포커스 이동
-            if (detailInput) {
-                detailInput.focus();
-            }
-        }
-    }).open();
-};
