@@ -6,11 +6,19 @@ document.addEventListener("DOMContentLoaded", () => {
     const form = document.querySelector(".info-form");
     const editableInputs = document.querySelectorAll(".editable");
     const addressBtn = document.getElementById("addressBtn");
-
     const genreCards = document.querySelectorAll(".genre-card");
+
+    /* ================= 닉네임 DOM ================= */
+    const profileInput = document.getElementById("profileNm");
+    const originalProfileInput = document.getElementById("originalProfileNm");
+    const msg = document.getElementById("profileNmMsg");
 
     let editMode = false;
     let selectedGenres = [];
+    let profileNmValid = true; // ✅ 닉네임 중복 체크 상태
+
+    /* ================= 방어 코드 ================= */
+    if (!form || !editBtn) return;
 
     /* ================= 초기 장르 상태 수집 ================= */
     genreCards.forEach(card => {
@@ -19,38 +27,76 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    /* =================  submit 가드 추가 ================= */
-    form?.addEventListener("submit", () => {
-        editableInputs.forEach(input => input.disabled = false);
-        if (addressBtn) addressBtn.disabled = false;
-    });
-
-
-
     /* ================= 수정 버튼 ================= */
-    editBtn?.addEventListener("click", () => {
+    editBtn.addEventListener("click", () => {
         editMode = !editMode;
 
-        // 회원정보 input
         editableInputs.forEach(input => {
             input.disabled = !editMode;
             input.style.background = editMode ? "#fff" : "#f3f3f3";
         });
 
-        // 주소 버튼
         if (addressBtn) addressBtn.disabled = !editMode;
-
-        // 저장 버튼
         if (saveBtn) saveBtn.style.display = editMode ? "inline-block" : "none";
 
-        // 장르 수정 가능/불가
         genreCards.forEach(card => {
             card.classList.toggle("disabled", !editMode);
             card.dataset.editable = editMode ? "true" : "false";
         });
 
+        // 🔹 수정 모드 진입 시 닉네임 상태 초기화
+        if (editMode && msg) {
+            msg.textContent = "";
+            profileNmValid = true;
+        }
+
         editBtn.innerText = editMode ? "취소" : "수정";
     });
+
+    /* ================= 닉네임 중복 체크 ================= */
+    if (profileInput && originalProfileInput && msg) {
+
+        profileInput.addEventListener("blur", () => {
+            if (!editMode) return;
+
+            const profileNm = profileInput.value.trim();
+            const originalProfileNm = originalProfileInput.value;
+
+            if (!profileNm) return;
+
+            // ✅ 기존 닉네임이면 통과
+            if (profileNm === originalProfileNm) {
+                msg.textContent = "현재 사용 중인 닉네임입니다";
+                msg.className = "input-msg ok";
+                profileNmValid = true;
+                return;
+            }
+
+            fetch("/mypage/profile/check", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: new URLSearchParams({
+                    profileNm,
+                    originalProfileNm
+                })
+            })
+                .then(res => res.json())
+                .then(isAvailable => {
+                    profileNmValid = isAvailable;
+                    msg.textContent = isAvailable
+                        ? "사용 가능한 닉네임입니다"
+                        : "이미 사용 중인 닉네임입니다";
+                    msg.className = "input-msg " + (isAvailable ? "ok" : "fail");
+                })
+                .catch(() => {
+                    profileNmValid = false;
+                    msg.textContent = "닉네임 확인 중 오류 발생";
+                    msg.className = "input-msg fail";
+                });
+        });
+    }
 
     /* ================= 장르 클릭 ================= */
     genreCards.forEach(card => {
@@ -73,18 +119,19 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    /* ================= submit 시 disabled 해제 (최중요) ================= */
-    form?.addEventListener("submit", () => {
-        editableInputs.forEach(input => input.disabled = false);
-        if (addressBtn) addressBtn.disabled = false;
-    });
-
     /* ================= 저장 버튼 ================= */
     saveBtn?.addEventListener("click", async (e) => {
         e.preventDefault();
 
+        // 🔥 닉네임 중복 체크 실패 시 저장 차단
+        if (!profileNmValid) {
+            alert("닉네임 중복을 확인해주세요.");
+            profileInput?.focus();
+            return;
+        }
+
         try {
-            // 1️⃣ 장르 먼저 저장
+            // 1️⃣ 장르 저장
             const res = await fetch("/mypage/myinfo/genres", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -92,7 +139,10 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             if (!res.ok) throw new Error("genre save failed");
 
-            // 2️⃣ 회원정보 저장 (submit 이벤트에서 disabled 해제됨)
+            // 2️⃣ disabled 해제 후 submit
+            editableInputs.forEach(input => input.disabled = false);
+            if (addressBtn) addressBtn.disabled = false;
+
             form.submit();
 
         } catch (err) {
@@ -100,7 +150,6 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("저장 중 오류가 발생했습니다.");
         }
     });
-
 });
 
 /* ================= 다음 주소 API ================= */
@@ -137,3 +186,177 @@ window.execDaumPostcode = function () {
         }
     }).open();
 };
+
+
+
+/* ================= 비밀번호 재설정 ================= */
+const pwModal = document.getElementById("pwModal");
+const pwChangeBtn = document.getElementById("pwChangeBtn");
+const pwCancelBtn = document.getElementById("pwCancelBtn");
+
+if (pwModal && pwChangeBtn && pwCancelBtn) {
+
+  pwChangeBtn.addEventListener("click", () => {
+    resetPwModal();
+    pwModal.style.display = "flex";
+  });
+
+  pwCancelBtn.addEventListener("click", () => {
+    pwModal.style.display = "none";
+  });
+
+
+}
+
+function resetPwModal() {
+  const currentPw = document.getElementById("currentPw");
+  const newPw = document.getElementById("newPw");
+  const newPwConfirm = document.getElementById("newPwConfirm");
+  const pwSubmitBtn = document.getElementById("pwSubmitBtn");
+  const currentPwMsg = document.getElementById("currentPwMsg");
+    const newPwMsg = document.getElementById("newPwMsg");
+    const newPwConfirmMsg = document.getElementById("newPwConfirmMsg");
+
+  if (currentPw) currentPw.value = "";
+  if (newPw) {
+    newPw.value = "";
+    newPw.disabled = true;
+  }
+  if (newPwConfirm) {
+    newPwConfirm.value = "";
+    newPwConfirm.disabled = true;
+  }
+  if (pwSubmitBtn) pwSubmitBtn.disabled = true;
+
+  showMsg(currentPwMsg, "");
+    showMsg(newPwMsg, "");
+    showMsg(newPwConfirmMsg, "");
+}
+
+
+// ==== 현재 비밀번호 검증 ====
+const verifyPwBtn = document.getElementById("verifyPwBtn");
+const currentPwInput = document.getElementById("currentPw");
+const newPwInput = document.getElementById("newPw");
+const newPwConfirmInput = document.getElementById("newPwConfirm");
+const currentPwMsg = document.getElementById("currentPwMsg");
+
+verifyPwBtn?.addEventListener("click", async () => {
+  const currentPw = currentPwInput.value.trim();
+  showMsg(currentPwMsg, "");
+
+  if (!currentPw) {
+    showMsg(currentPwMsg, "현재 비밀번호를 입력해 주세요.");
+    currentPwInput.focus();
+    return;
+  }
+
+  try {
+    const res = await fetch("/mypage/password/verify", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ password: currentPw })
+    });
+
+    if (!res.ok) {
+      const msg = await res.text();
+      showMsg(currentPwMsg, msg || "비밀번호가 일치하지 않습니다.");
+      return;
+    }
+
+    // ✅ 성공
+    showMsg(currentPwMsg, "✔ 확인되었습니다.", true);
+    newPwInput.disabled = false;
+    newPwConfirmInput.disabled = false;
+    newPwInput.focus();
+
+  } catch (e) {
+     showMsg(currentPwMsg, "네트워크 오류가 발생했습니다.");
+  }
+
+});
+
+const pwSubmitBtn = document.getElementById("pwSubmitBtn");
+const newPwMsg = document.getElementById("newPwMsg");
+const newPwConfirmMsg = document.getElementById("newPwConfirmMsg");
+
+// 비밀번호 규칙 (서비스랑 동일)
+const pwRegex =
+  /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,16}$/;
+
+function validateNewPassword() {
+  const currentPw = currentPwInput.value;
+  const newPw = newPwInput.value;
+  const confirmPw = newPwConfirmInput.value;
+
+  showMsg(newPwMsg, "");
+    showMsg(newPwConfirmMsg, "");
+
+  // 정규식
+  if (!pwRegex.test(newPw)) {
+  showMsg(newPwMsg, "영문, 숫자, 특수문자 포함 8~16자로 입력해 주세요.");
+    pwSubmitBtn.disabled = true;
+    return;
+  }
+
+  // 새 비밀번호 확인
+  if (newPw !== confirmPw) {
+    showMsg(newPwConfirmMsg, "비밀번호가 일치하지 않습니다.");
+    pwSubmitBtn.disabled = true;
+    return;
+  }
+
+  // 기존 비밀번호와 동일 방지
+  if (newPw === currentPw) {
+    showMsg(newPwMsg, "기존 비밀번호와 동일합니다.");
+    pwSubmitBtn.disabled = true;
+    return;
+  }
+
+   if (confirmPw) {
+      showMsg(newPwConfirmMsg, "✔ 비밀번호가 일치합니다.", true);
+    }
+
+  pwSubmitBtn.disabled = false;
+}
+
+newPwInput?.addEventListener("input", validateNewPassword);
+newPwConfirmInput?.addEventListener("input", validateNewPassword);
+
+// ==== 비밀번호 변경 ====
+pwSubmitBtn?.addEventListener("click", async () => {
+  pwSubmitBtn.disabled = true;
+
+  try {
+    const res = await fetch("/mypage/password/change", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ newPassword: newPwInput.value.trim() })
+    });
+
+    if (!res.ok) {
+      const msg = await res.text();
+      showMsg(newPwConfirmMsg, msg || "비밀번호 변경 실패");
+      pwSubmitBtn.disabled = false;
+      return;
+    }
+
+    alert("비밀번호가 변경되었습니다."); // ✅ 완료 알림만 유지
+    pwModal.style.display = "none";
+
+  } catch (e) {
+    showMsg(newPwConfirmMsg, "네트워크 오류가 발생했습니다.");
+    pwSubmitBtn.disabled = false;
+  }
+
+
+});
+
+function showMsg(target, message, isSuccess = false) {
+    if (!target) return;
+    target.innerText = message;
+    target.style.color = isSuccess ? "#28a745" : "#dc3545";
+    target.style.display = message ? "block" : "none";
+}
