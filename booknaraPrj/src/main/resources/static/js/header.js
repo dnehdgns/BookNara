@@ -1,25 +1,13 @@
-/*
-“이 로직은 알림 DOM이 항상 존재한다는 전제로 짜여있는데, 실제로는 비로그인/페이지별 헤더 구성 차이 때문에 null이 나올 수 있다.”
-“그래서 특정 페이지에서 querySelector(...)가 null을 반환하고, 그 상태로 addEventListener를 걸면서 콘솔 에러가 난다.”
-“해결은 로직 변경이 아니라, DOM 존재 여부 체크(null guard) 를 최소로 추가하면 된다.”
-* */
-
-
-
 document.addEventListener("DOMContentLoaded", () => {
   const alarmBtn = document.getElementById("alarmBtn");
   const alarmBox = document.getElementById("alarmBox");
 
-  // ✅ [체크1] 비로그인/헤더 미포함 페이지에서는 alarmBtn/alarmBox가 null일 수 있음
-  // -> 아래에서 addEventListener 걸기 전에 null 가드 필요
   if (alarmBtn && alarmBox) {
     alarmBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       alarmBox.style.display = alarmBox.style.display === "block" ? "none" : "block";
 
       const tab = document.querySelector(".tab.active");
-      // ✅ [체크2] tab이 null이면 tab.dataset에서 터짐 (초기 active 탭이 없을 수도 있음)
-      // -> tab 존재 여부 확인 필요
       const filter = tab.dataset.filter;
       const url = `/notification?tab=${filter}&page=1&size=10&checkYn=N`;
       loadTab(url);
@@ -42,10 +30,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const readBtn = document.querySelector("#allread");
   const tabs = document.querySelectorAll(".tab");
   const allNotiBtn = document.querySelector("#all-noti-btn");
-
-  // ✅ [체크3] window.IS_LOGGED_IN이 true여도 DOM이 항상 존재한다는 보장은 없음
-  // (페이지마다 header 구성 차이, 권한/템플릿 분기 등)
-  // -> alarmMenuDot/alarmMenu/readBtn/allNotiBtn null 가드 필요
 
   // 로그인이 되어 있다면
   if (window.IS_LOGGED_IN) {
@@ -91,8 +75,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function closeAlarmMenu() {
-    // ✅ [체크4] closeAlarmMenu()는 여러 군데서 호출됨
-    // -> alarmMenuDot / alarmMenu가 null일 때도 안전해야 함 (여기서도 터질 수 있음)
     alarmMenuDot.classList.remove("alarm-menu-active");
     alarmMenu.style.display = "none";
   }
@@ -106,10 +88,6 @@ document.addEventListener("DOMContentLoaded", () => {
   let pointerId = null;
 
   const MOVE_THRESHOLD = 10; // px: 이 이상 움직이면 '드래그'로 판단
-
-
-  // ✅ [체크5] 비로그인(또는 헤더 알림 UI 없는 페이지)면 alarmTabs = null
-  // -> 아래 pointer 이벤트 등록에서 addEventListener 하면서 터짐 (지금 에러의 유력 후보)
 
   alarmTabs.addEventListener('pointerdown', (e) => {
     // 왼쪽 버튼만 (마우스)

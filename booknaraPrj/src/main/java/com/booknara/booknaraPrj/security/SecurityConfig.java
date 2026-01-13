@@ -43,6 +43,13 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/home",
                                 "/users/login",
+
+                                "/event/**",
+                                "/information/**",
+                                "/guide",
+                                "/guideDetail",
+
+
                                 "/users/signup",
                                 "/users/find-account",
                                 "/users/signup-extra",
@@ -63,7 +70,13 @@ public class SecurityConfig {
 
                                 "/oauth2/**",
                                 "/login/oauth2/**",
-
+                                "/api/users/**",
+                                "/users/reset-password-form",
+                                "/users/reset-password",
+                                "/recommend/**",
+                                "/api/recommend/**",
+                                "/api/**",
+                                "/api/main/**",
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
