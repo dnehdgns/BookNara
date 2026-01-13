@@ -35,6 +35,8 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
 
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+
                         .requestMatchers(HttpMethod.GET,
                                 "/book/review/list",
                                 "/book/cart/*/status"
@@ -48,6 +50,15 @@ public class SecurityConfig {
                                 "/information/**",
                                 "/guide",
                                 "/guideDetail",
+                                "/uploads/**",
+                                "/location",
+                                "/locker",
+                                "/flow",
+                                "/schedule",
+                                "/faq",
+                                "/faq/**",
+                                "/notice",
+                                "/inquiry",
 
 
                                 "/users/signup",
@@ -82,9 +93,9 @@ public class SecurityConfig {
                                 "/images/**",
                                 "/favicon.ico",
                                 "/error/*",
-                                "/error",
-                                "/error/**",
-                                "/404"
+                                "/404",
+                                "/405",
+                                "/500"
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST,
                                 "/users/find-id",
