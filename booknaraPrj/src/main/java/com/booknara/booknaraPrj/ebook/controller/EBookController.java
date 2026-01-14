@@ -34,7 +34,7 @@ public class EBookController {
 
         model.addAttribute("myEbookList", e_list);
 
-        return "/ebook/ebook";
+            return "/ebook/ebook";
     }
 
     @GetMapping("/ebook/{bookid}")

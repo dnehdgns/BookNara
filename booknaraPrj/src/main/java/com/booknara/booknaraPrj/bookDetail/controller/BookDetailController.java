@@ -61,6 +61,6 @@ public class BookDetailController {
         model.addAttribute("view", view);
 
         // 6. [화면 반환] book/bookDetail.html 템플릿 렌더링
-        return "book/bookDetail";
+        return "book/bookdetail";
     }
 }
