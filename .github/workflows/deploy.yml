@@ -29,7 +29,8 @@ jobs:
         run: chmod +x ./booknaraPrj/gradlew
 
       - name: 테스트 및 빌드하기
-        run: cd booknaraPrj
+        run: |
+          cd booknaraPrj
           ./gradlew clean build
 
       - name: AWS Resource에 접근할 수 있게 AWS credentials 설정
