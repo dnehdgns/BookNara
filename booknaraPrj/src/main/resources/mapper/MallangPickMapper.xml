@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.booknara.booknaraPrj.mainpage.mapper.MallangPickMapper">
+
+    <select id="findRandomBooksByGenre"
+            resultType="com.booknara.booknaraPrj.mainpage.dto.MallangPickDTO">
+
+        WITH RECURSIVE GenreHierarchy AS (
+        SELECT GENRE_ID
+        FROM GENRE
+        WHERE GENRE_ID = #{genreId}
+
+        UNION ALL
+
+
+        SELECT g.GENRE_ID
+        FROM GENRE g
+        INNER JOIN GenreHierarchy gh ON g.PARENT_ID = gh.GENRE_ID
+        )
+        SELECT
+        B.ISBN13,
+        B.BOOK_TITLE,
+        B.AUTHORS,
+        B.PUBLISHER,
+        B.NAVER_IMAGE,
+        B.ALADIN_IMAGE_BIG,
+        G.GENRE_NM
+        FROM BOOK_ISBN B
+        JOIN GenreHierarchy GH ON B.GENRE_ID = GH.GENRE_ID
+        JOIN GENRE G ON B.GENRE_ID = G.GENRE_ID
+
+        ORDER BY RAND()
+        LIMIT #{limit};
+    </select>
+
+</mapper>

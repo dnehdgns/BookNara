@@ -1,5 +1,32 @@
 /*이벤트 배너 슬라이드*/
 document.addEventListener("DOMContentLoaded", () => {
+  fetch("/api/main/events")
+    .then(res => res.json())
+    .then(events => {
+      const track = document.querySelector(".banner-track");
+      const indicator = document.querySelector(".banner-indicator");
+
+      if (!events || events.length === 0) return;
+
+      track.innerHTML = "";
+      indicator.innerHTML = "";
+
+      events.forEach((e, idx) => {
+        track.innerHTML += `
+          <div class="banner-slide">
+            <img src="${e.imgUrl}" alt="${e.eventTitle}">
+          </div>
+        `;
+        indicator.innerHTML += `
+          <span class="dot ${idx === 0 ? 'active' : ''}"></span>
+        `;
+      });
+
+      initBannerSlider();
+    });
+});
+
+function initBannerSlider() {
   const track = document.querySelector(".banner-track");
   const slides = document.querySelectorAll(".banner-slide");
   const dots = document.querySelectorAll(".banner-indicator .dot");
@@ -8,6 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let currentIndex = 0;
   const slideCount = slides.length;
+  let slideInterval;
 
   function updateSlide(index) {
     track.style.transform = `translateX(-${index * 100}%)`;
@@ -31,114 +59,202 @@ document.addEventListener("DOMContentLoaded", () => {
       updateSlide(currentIndex);
     });
   });
-});
 
+  function updateSlide(index) {
+      track.style.transform = `translateX(-${index * 100}%)`;
+      dots.forEach(dot => dot.classList.remove("active"));
+      dots[index].classList.add("active");
+    }
 
+    // ✅ 다음 슬라이드로 이동하는 기능 (재사용을 위해 분리)
+    function nextSlide() {
+      currentIndex = (currentIndex + 1) % slideCount;
+      updateSlide(currentIndex);
+    }
+
+    // ✅ 자동 넘김 시작 함수 (3초마다 실행)
+    function startAutoSlide() {
+      stopAutoSlide(); // 중복 방지
+      slideInterval = setInterval(nextSlide, 3000); // 3000ms = 3초
+    }
+
+    nextBtn.addEventListener("click", () => {
+        nextSlide();
+        startAutoSlide(); // 수동 조작 시 타이머 리셋
+      });
+
+      prevBtn.addEventListener("click", () => {
+        currentIndex = (currentIndex - 1 + slideCount) % slideCount;
+        updateSlide(currentIndex);
+        startAutoSlide(); // 수동 조작 시 타이머 리셋
+      });
+
+      dots.forEach((dot, index) => {
+        dot.addEventListener("click", () => {
+          currentIndex = index;
+          updateSlide(currentIndex);
+          startAutoSlide(); // 수동 조작 시 타이머 리셋
+        });
+      });
+      startAutoSlide();
+}
+
+/* ===============================
+   말랑이픽 (해시태그 + 도서)
+   =============================== */
 document.addEventListener("DOMContentLoaded", () => {
 
-  /* ===== 장르별 도서 데이터 (나중에 DB로 교체) ===== */
-  const bookData = {
-    warm: [
-      { title: "너를 생각하는 것이 나의 일생이었다", author: "정채봉", img: "./images/book1.jpg" },
-      { title: "오늘도 고마워", author: "김신지", img: "./images/book2.jpg" },
-      { title: "괜찮아, 잘 될 거야", author: "에세이", img: "./images/book3.jpg" }
-    ],
-    mystery: [
-      { title: "용의자 X의 헌신", author: "히가시노 게이고", img: "./images/book4.png" },
-      { title: "백야행", author: "히가시노 게이고", img: "./images/book5.png" },
-      { title: "셜록 홈즈", author: "아서 코난 도일", img: "./images/book6.png" }
-    ],
-    horror: [
-      { title: "사랑해도 혼나지 않는 꿈이었다", author: "시오엔", img: "./images/book7.png" },
-      { title: "기담", author: "공포 단편", img: "./images/book8.png" },
-      { title: "소름", author: "미스터리", img: "./images/book9.png" }
-    ]
-  };
+  const hashtagBox = document.getElementById("recommendHashtags");
+  const bookCards = document.querySelectorAll(".book-card");
 
-  /* ===== 기존 DOM 요소 ===== */
-  const hashtags = Array.from(document.querySelectorAll(".hashtag"));
-  const cards = document.querySelectorAll(".book-card");
+  // 1️⃣ 해시태그 3개 서버에서 가져오기
+  fetch("/api/main/mallang-pick/hashtags")
+    .then(res => res.json())
+    .then(tags => {
+      hashtagBox.innerHTML = "";
 
-  /* ===== 해시태그 10개 중 랜덤 3개만 표시 ===== */
-  hashtags.sort(() => Math.random() - 0.5);
+      if (!tags || tags.length === 0) {
+        hashtagBox.innerHTML = "<p>추천 해시태그 준비 중</p>";
+        return;
+      }
 
-  hashtags.forEach((tag, idx) => {
-    tag.style.display = idx < 3 ? "block" : "none";
-  });
+      tags.forEach((tag, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "hashtag";
+        btn.innerText = tag.label;
 
-  /* 첫 번째 해시태그 자동 선택 */
-  const firstTag = hashtags.find(tag => tag.style.display === "block");
-  if (firstTag) {
-    firstTag.classList.add("active");
-    renderBooks(firstTag.dataset.genre);
-  }
+        btn.addEventListener("click", () => {
+          document
+            .querySelectorAll("#recommendHashtags .hashtag")
+            .forEach(b => b.classList.remove("active"));
 
-  /* ===== 해시태그 클릭 ===== */
-  hashtags.forEach(tag => {
-    tag.addEventListener("click", () => {
-      if (tag.style.display === "none") return;
+          btn.classList.add("active");
+          loadBooks(tag.genreId);
+        });
 
-      hashtags.forEach(t => t.classList.remove("active"));
-      tag.classList.add("active");
+        hashtagBox.appendChild(btn);
 
-      renderBooks(tag.dataset.genre);
+        // 첫 번째 해시태그 자동 선택
+        if (idx === 0) {
+          btn.classList.add("active");
+          loadBooks(tag.genreId);
+        }
+      });
+    })
+    .catch(err => {
+      console.error("말랑이픽 해시태그 로딩 실패", err);
+      hashtagBox.innerHTML = "<p>추천 해시태그를 불러오지 못했어요</p>";
     });
-  });
 
-  /* ===== 카드 내용만 교체 ===== */
-  function renderBooks(genre) {
-    const books = bookData[genre] || [];
+  // 2️⃣ 해시태그 클릭 → 도서 3권 로딩
+  function loadBooks(genreId) {
+    fetch(`/api/main/mallang-pick/books?genreId=${genreId}`)
+      .then(res => res.json())
+      .then(books => {
+        bookCards.forEach((card, idx) => {
+          const book = books[idx];
 
-    cards.forEach((card, idx) => {
-      const book = books[idx];
-      if (!book) return;
+          // 데이터 없을 때
+          if (!book) {
+            card.querySelector(".book-img").src = "/images/placeholder_book.png";
+            card.querySelector(".book-title").innerText = "추천 도서 준비 중";
+            card.querySelector(".book-author").innerText = "";
+            card.querySelector(".book-link").href = "#";
+            return;
+          }
 
-      card.querySelector("img").src = book.img;
-      card.querySelector("img").alt = book.title;
-      card.querySelector(".book-title").innerText = book.title;
-      card.querySelector(".book-author").innerText = book.author;
-    });
+          console.log(book.naverImage);
+          console.log(book.aladinImageBig);
+
+          if(book.naverImage)
+            card.querySelector(".book-img").src = book.naverImage;
+          else
+            card.querySelector(".book-img").src = book.aladinImageBig;
+          //card.querySelector(".book-img").src = book.bookImg;
+          card.querySelector(".book-img").alt = book.bookTitle;
+          card.querySelector(".book-title").innerText = book.bookTitle;
+          card.querySelector(".book-author").innerText =
+            `${book.authors} · ${book.publisher}`;
+
+          // ⭐ 상세 페이지 이동
+          card.querySelector(".book-link").href =
+            `/book/detail/${book.isbn13}`;
+        });
+      })
+      .catch(err => {
+        console.error("말랑이픽 도서 로딩 실패", err);
+      });
   }
-
 });
 
 
 
-
+//사서추천
+// 사서 추천
 document.addEventListener("DOMContentLoaded", () => {
-  const track = document.querySelector(".new-books-track");
-  const wrapper = document.querySelector(".new-books-track-wrapper");
-  const prevBtn = document.querySelector(".new-books-slider .prev");
-  const nextBtn = document.querySelector(".new-books-slider .next");
 
-  const cardWidth = 180;
-  const gap = 34;
-  const step = cardWidth + gap;
+  const list = document.getElementById("librarianBookList"); // 컨테이너
 
-  let index = 0;
+  fetch("/api/main/librarian/books")
+    .then(res => res.json())
+    .then(books => {
+      list.innerHTML = ""; // 기존 더미 제거
 
-  function getMaxIndex() {
-    const trackWidth = track.scrollWidth;
-    const wrapperWidth = wrapper.clientWidth;
-    return Math.max(0, Math.ceil((trackWidth - wrapperWidth) / step));
-  }
+      books.forEach(book => {
+        const card = document.createElement("a");
+        card.className = "librarian-book-card";
+        card.href = `/book/detail/${book.isbn13}`;
+        card.innerHTML = `
+          <div class="book-cover">
+            <img src="${book.bookImg}" alt="${book.bookTitle}">
+          </div>
+          <div class="book-info">
+            <p class="book-title">${book.bookTitle}</p>
+            <p class="book-author">
+              ${book.authors} · ${book.publisher}
+            </p>
+          </div>
+        `;
 
-  function update() {
-    track.style.transform = `translateX(-${index * step}px)`;
-  }
-
-  nextBtn.addEventListener("click", () => {
-    const maxIndex = getMaxIndex();
-    if (index < maxIndex) {
-      index++;
-      update();
-    }
-  });
-
-  prevBtn.addEventListener("click", () => {
-    if (index > 0) {
-      index--;
-      update();
-    }
-  });
+        list.appendChild(card);
+      });
+    })
+    .catch(err => console.error("사서 추천 로딩 실패", err));
 });
+
+
+// 신간도서
+document.addEventListener("DOMContentLoaded", () => {
+
+  const list = document.getElementById("newBooksList");
+  if (!list) return;
+
+  fetch("/api/main/new-books")
+    .then(res => res.json())
+    .then(books => {
+      list.innerHTML = "";
+
+      books.forEach(book => {
+        const card = document.createElement("div");
+        card.className = "librarian-book-card";
+
+        card.innerHTML = `
+          <a href="/book/detail/${book.isbn13}" class="new-book-link">
+            <div class="book-cover">
+              <img src="${book.bookImg}" alt="${book.bookTitle}">
+            </div>
+            <div class="book-info">
+              <p class="book-title">${book.bookTitle}</p>
+              <p class="book-author">
+                ${book.authors} · ${book.publisher}
+              </p>
+            </div>
+          </a>
+        `;
+
+        list.appendChild(card);
+      });
+    })
+    .catch(err => console.error("신간도서 로딩 실패", err));
+});
+

@@ -1,0 +1,113 @@
+/* ===============================
+   이벤트 참여 내역 (mypage 우측 조각 전용)
+   - mypagelayout.css를 침범하지 않음
+   =============================== */
+
+/* 전체 래퍼 */
+.event-container {
+    width: 100%;
+    background: #fff;
+    border-radius: 8px;
+    padding: 24px;
+}
+
+/* ===== 제목 ===== */
+.event-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 16px;
+}
+
+.event-divider {
+    border-bottom: 2px solid #ddd;
+    margin-bottom: 16px;
+}
+
+/* ===== 필터 ===== */
+.event-filter {
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.event-filter a {
+    text-decoration: none;
+    color: #555;
+    cursor: pointer;
+}
+
+.event-filter a.active {
+    font-weight: 700;
+    color: #000;
+}
+
+/* ===== 스크롤 영역 ===== */
+.event-scroll {
+    max-height: 360px;
+    overflow-y: auto;
+    padding-right: 6px;
+}
+
+.event-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.event-scroll::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+
+/* ===== 리스트 ===== */
+.event-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* ===== 카드 ===== */
+.event-card {
+    position: relative;
+    height: 90px;
+    background: #e0e0e0;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+/* 배너 */
+.event-banner {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.35;
+}
+
+/* 카드 내용 */
+.event-card-content {
+    position: relative;
+    z-index: 1;
+    height: 100%;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+}
+
+.event-card-title {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.event-card-date {
+    font-size: 13px;
+    color: #333;
+}
+
+.event-card-status {
+    font-size: 13px;
+    font-weight: 700;
+}

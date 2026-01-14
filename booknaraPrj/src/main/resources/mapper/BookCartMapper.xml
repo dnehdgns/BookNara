@@ -5,47 +5,120 @@
 
 <mapper namespace="com.booknara.booknaraPrj.bookcart.mapper.BookCartMapper">
 
-    <!-- 담기: 중복 방지(유니크키 있어야 함: (USER_ID, ISBN13)) -->
     <insert id="insert">
-        INSERT IGNORE INTO BOOKS_CART (USER_ID, ISBN13)
-    VALUES (#{userId}, #{isbn13})
+        INSERT IGNORE INTO BOOKS_CART (
+            USER_ID,
+            ISBN13
+        )
+        VALUES (
+        #{userId},
+        #{isbn13}
+        )
     </insert>
 
-    <!-- 개별 삭제 -->
     <delete id="delete">
         DELETE FROM BOOKS_CART
         WHERE USER_ID = #{userId}
           AND CART_ID = #{cartId}
     </delete>
-    <!-- ISBN으로 삭제-->
+
     <delete id="deleteByIsbn">
         DELETE FROM BOOKS_CART
         WHERE USER_ID = #{userId}
           AND ISBN13 = #{isbn13}
     </delete>
 
-    <!-- 전체 비우기 -->
     <delete id="deleteAll">
         DELETE FROM BOOKS_CART
         WHERE USER_ID = #{userId}
     </delete>
 
-
-    <!-- 장바구니 목록 -->
-    <select id="selectList"
-            resultType="com.booknara.booknaraPrj.bookcart.dto.BookCartDTO">
+    <select id="selectList" resultType="com.booknara.booknaraPrj.bookcart.dto.BookCartDTO">
         SELECT
-            c.CART_ID           AS cartId,
-            bi.ISBN13           AS isbn13,
-            bi.BOOK_TITLE       AS bookTitle,
-            bi.AUTHORS          AS authors,
-            bi.ALADIN_IMAGE_BIG AS aladinImageBig,
-            bi.NAVER_IMAGE      AS naverImage,
-            bi.EBOOK_YN         AS ebookYn
-        FROM BOOKS_CART c
-                 JOIN BOOK_ISBN bi ON bi.ISBN13 = c.ISBN13
-        WHERE c.USER_ID = #{userId}
-        ORDER BY c.CREATED_AT DESC
+            C.CART_ID           AS cartId,
+            BI.ISBN13           AS isbn13,
+            BI.BOOK_TITLE       AS bookTitle,
+            BI.AUTHORS          AS authors,
+            BI.ALADIN_IMAGE_BIG AS aladinImageBig,
+            BI.NAVER_IMAGE      AS naverImage,
+            BI.EBOOK_YN         AS ebookYn
+        FROM BOOKS_CART C
+                 JOIN BOOK_ISBN BI ON BI.ISBN13 = C.ISBN13
+        WHERE C.USER_ID = #{userId}
+        ORDER BY C.CREATED_AT DESC
     </select>
+
+    <select id="countMyCart" resultType="int">
+        SELECT COUNT(*)
+        FROM BOOKS_CART C
+                 JOIN BOOK_ISBN BI ON BI.ISBN13 = C.ISBN13
+        WHERE C.USER_ID = #{userId}
+    </select>
+
+    <select id="countMyActiveLends" resultType="int">
+        SELECT COUNT(*)
+        FROM LENDS
+        WHERE USER_ID = #{userId}
+          AND RETURN_DONE_AT IS NULL
+    </select>
+
+    <select id="selectMaxLendCount" resultType="int">
+        SELECT MAX_LEND_COUNT
+        FROM SETTINGS
+        ORDER BY SETTINGS_ID DESC
+            LIMIT 1
+    </select>
+
+    <select id="isLendableByIsbn" resultType="boolean">
+        SELECT
+            CASE
+                WHEN
+                    (
+                        SELECT COUNT(*)
+                        FROM BOOKS B
+                        WHERE B.ISBN13 = #{isbn13}
+                          AND B.BOOK_STATE = 'N'
+                    )
+                        >
+                    (
+                        SELECT COUNT(*)
+                        FROM LENDS L
+                                 JOIN BOOKS B2 ON B2.BOOK_ID = L.BOOK_ID
+                        WHERE B2.ISBN13 = #{isbn13}
+                          AND L.RETURN_DONE_AT IS NULL
+                    )
+                    THEN TRUE
+                ELSE FALSE
+                END
+    </select>
+
+    <select id="existsByIsbn" resultType="int">
+        SELECT COUNT(*)
+        FROM BOOKS_CART
+        WHERE USER_ID = #{userId}
+          AND ISBN13  = #{isbn13}
+    </select>
+
+    <select id="selectMyDefaultAddress"
+            parameterType="string"
+            resultType="com.booknara.booknaraPrj.bookcart.dto.UserAddressDTO">
+        SELECT
+            ZIPCODE     AS zipcode,
+            ADDR        AS addr,
+            DETAIL_ADDR AS detailAddr
+        FROM USERS
+        WHERE USER_ID = #{userId}
+    </select>
+
+    <update id="updateMyDefaultAddress"
+            parameterType="com.booknara.booknaraPrj.bookcart.dto.UserAddressDTO">
+        UPDATE USERS
+        SET
+            ZIPCODE     = #{zipcode},
+            ADDR        = #{addr},
+            DETAIL_ADDR = #{detailAddr},
+            UPDATED_AT  = NOW()
+        WHERE USER_ID = #{userId}
+    </update>
 
 </mapper>

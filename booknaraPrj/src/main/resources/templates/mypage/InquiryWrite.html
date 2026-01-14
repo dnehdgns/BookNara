@@ -1,0 +1,43 @@
+<th:block th:fragment="content" xmlns:th="http://www.thymeleaf.org">
+    <div class="inquiry-write">
+
+        <h2 class="inquiry-title">문의 작성</h2>
+
+        <form method="post" action="/my/inquiry" class="inquiry-form">
+
+            <!-- 문의 유형 -->
+            <div class="form-row">
+                <label>문의 유형</label>
+                <select name="inqType" required>
+                    <option value="1">도서관리</option>
+                    <option value="2">대여/반납</option>
+                    <option value="3">시스템</option>
+                    <option value="4">계정</option>
+                    <option value="5">신고</option>
+                    <option value="6">기타</option>
+                </select>
+            </div>
+
+            <!-- 제목 -->
+            <div class="form-row">
+                <label>제목</label>
+                <input type="text" name="inqTitle" placeholder="제목을 입력하세요" required>
+            </div>
+
+            <!-- 내용 -->
+            <div class="form-row">
+                <label>문의 내용</label>
+                <textarea name="inqContent" rows="6"
+                          placeholder="문의 내용을 입력하세요" required></textarea>
+            </div>
+
+            <!-- 버튼 영역 -->
+            <div class="form-actions">
+                <a href="/my/inquiry" class="btn cancel">취소</a>
+                <button type="submit" class="btn submit">등록</button>
+            </div>
+
+        </form>
+
+    </div>
+</th:block>

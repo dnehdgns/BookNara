@@ -1,0 +1,93 @@
+/* ===============================
+   문의 내역 (History)
+   =============================== */
+
+.inquiry-container {
+    width: 100%;
+    background: #fff;
+    border-radius: 8px;
+    padding: 24px;
+}
+
+/* 제목 + 글쓰기 버튼 */
+.inquiry-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 16px;
+}
+
+
+
+/* 검색 */
+.search-box {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 16px;
+}
+
+.search-input {
+    position: relative;
+    width: 260px;
+}
+
+.search-input input {
+    width: 100%;
+    padding: 8px 36px 8px 10px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
+.search-input button {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+/* 리스트 */
+.inquiry-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.inquiry-card {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 14px;
+}
+
+/* 질문 */
+.question {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+
+.question-text {
+    font-size: 14px;
+}
+
+.question-meta {
+    font-size: 12px;
+    color: #666;
+    text-align: right;
+}
+
+/* 답변 */
+.answer {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #444;
+    padding-left: 10px;
+    border-left: 3px solid #ddd;
+}

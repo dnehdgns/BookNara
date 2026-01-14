@@ -5,178 +5,219 @@
 
 <mapper namespace="com.booknara.booknaraPrj.bookSearch.mapper.BookSearchMapper">
 
-    <!-- =========================================================
-         공통 FROM/WHERE
-         ========================================================= -->
+    <sql id="SelectBookCols">
+        B.ISBN13           AS isbn13,
+        B.BOOK_TITLE       AS bookTitle,
+        B.AUTHORS          AS authors,
+        B.PUBLISHER        AS publisher,
+        B.PUBDATE          AS pubdate,
+        B.DESCRIPTION      AS description,
+        B.NAVER_IMAGE      AS naverImage,
+        B.ALADIN_IMAGE_BIG AS aladinImageBig,
+        B.EBOOK_YN         AS ebookYn,
+        B.GENRE_ID         AS genreId,
+        G.GENRE_NM         AS genreNm,
+        RS.RATING_AVG      AS ratingAvg,
+        IFNULL(RS.REVIEW_CNT, 0) AS reviewCnt
+    </sql>
 
-    <!-- ✅ 북마크 조인 (GENERAL PATH에서 BaseFrom에 포함) -->
+    <sql id="SelectUserFlagsCols">
+        <choose>
+            <when test="userId != null and userId != ''">
+                , CASE WHEN BM.USER_ID IS NULL THEN 'N' ELSE 'Y' END AS bookmarkedYn
+                , CASE WHEN BC.CART_ID IS NULL THEN 'N' ELSE 'Y' END AS myCartYn
+                , BC.CART_ID AS myCartId
+            </when>
+            <otherwise>
+                , 'N'  AS bookmarkedYn
+                , 'N'  AS myCartYn
+                , NULL AS myCartId
+            </otherwise>
+        </choose>
+    </sql>
+
+    <sql id="SortExpr">
+        <choose>
+            <when test="cond.sort == 'RATING'">
+                (RS.RATING_AVG IS NULL) ASC, RS.RATING_AVG DESC, B.PUBDATE DESC, B.ISBN13 ASC
+            </when>
+            <when test="cond.sort == 'REVIEW'">
+                IFNULL(RS.REVIEW_CNT,0) DESC, B.PUBDATE DESC, B.ISBN13 ASC
+            </when>
+            <otherwise>
+                B.PUBDATE DESC, B.ISBN13 ASC
+            </otherwise>
+        </choose>
+    </sql>
+
+
+    <sql id="OrderByBase">
+        ORDER BY <include refid="SortExpr"/>
+    </sql>
+
     <sql id="BaseBookmarkJoin">
         <if test="userId != null and userId != ''">
-            LEFT JOIN BOOKMARK bm
-            ON bm.ISBN13 = b.ISBN13
-            AND bm.USER_ID = #{userId}
+            LEFT JOIN BOOKMARK BM
+            ON BM.ISBN13 = B.ISBN13
+            AND BM.USER_ID = #{userId}
         </if>
     </sql>
 
-    <!-- ✅ 장바구니 조인 -->
     <sql id="BaseCartJoin">
         <if test="userId != null and userId != ''">
-            LEFT JOIN BOOKS_CART bc
-            ON bc.ISBN13 = b.ISBN13
-            AND bc.USER_ID = #{userId}
+            LEFT JOIN BOOKS_CART BC
+            ON BC.ISBN13 = B.ISBN13
+            AND BC.USER_ID = #{userId}
         </if>
     </sql>
 
-
     <sql id="BaseFrom">
-        FROM BOOK_ISBN b
-        JOIN GENRE g ON g.GENRE_ID = b.GENRE_ID
-        LEFT JOIN GENRE p ON p.GENRE_ID = g.PARENT_ID
+        FROM BOOK_ISBN B
+        JOIN GENRE G ON G.GENRE_ID = B.GENRE_ID
+        LEFT JOIN GENRE P ON P.GENRE_ID = G.PARENT_ID
         <include refid="BaseBookmarkJoin"/>
         <include refid="BaseCartJoin"/>
     </sql>
 
-    <!-- ✅ REVIEW_STAT 조인 -->
     <sql id="ReviewStatJoin">
-        LEFT JOIN REVIEW_STAT rs
-        ON rs.ISBN13 = b.ISBN13
+        LEFT JOIN REVIEW_STAT RS
+          ON RS.ISBN13 = B.ISBN13
     </sql>
+
+    <sql id="WhereKeyword">
+        <if test="cond.keyword != null and cond.keyword != ''">
+            <choose>
+                <when test="cond.useFulltext != null and cond.useFulltext == true">
+                    <choose>
+                        <when test="cond.field == 'TITLE'">
+                            AND (
+                            <if test="cond.ftKeyword != null and cond.ftKeyword != ''">
+                                MATCH(B.BOOK_TITLE, B.AUTHORS, B.PUBLISHER) AGAINST (#{cond.ftKeyword} IN BOOLEAN MODE)
+                            </if>
+                            <if test="cond.ftJoined != null and cond.ftJoined != ''">
+                                <if test="cond.ftKeyword != null and cond.ftKeyword != ''"> OR </if>
+                                MATCH(B.BOOK_TITLE, B.AUTHORS, B.PUBLISHER) AGAINST (#{cond.ftJoined} IN BOOLEAN MODE)
+                            </if>
+                            )
+                        </when>
+
+                        <when test="cond.field == 'AUTHOR'">
+                            AND (
+                            MATCH(B.AUTHORS) AGAINST (#{cond.ftKeyword} IN BOOLEAN MODE)
+                            <if test="cond.ftJoined != null and cond.ftJoined != ''">
+                                OR MATCH(B.AUTHORS) AGAINST (#{cond.ftJoined} IN BOOLEAN MODE)
+                            </if>
+                            )
+                        </when>
+
+                        <when test="cond.field == 'PUBLISHER'">
+                            AND (
+                            MATCH(B.PUBLISHER) AGAINST (#{cond.ftKeyword} IN BOOLEAN MODE)
+                            <if test="cond.ftJoined != null and cond.ftJoined != ''">
+                                OR MATCH(B.PUBLISHER) AGAINST (#{cond.ftJoined} IN BOOLEAN MODE)
+                            </if>
+                            )
+                        </when>
+
+                        <otherwise>
+                            AND (
+                            MATCH(B.BOOK_TITLE, B.AUTHORS, B.PUBLISHER) AGAINST (#{cond.ftKeyword} IN BOOLEAN MODE)
+                            <if test="cond.ftJoined != null and cond.ftJoined != ''">
+                                OR MATCH(B.BOOK_TITLE, B.AUTHORS, B.PUBLISHER) AGAINST (#{cond.ftJoined} IN BOOLEAN MODE)
+                            </if>
+                            )
+                        </otherwise>
+                    </choose>
+                </when>
+
+                <otherwise>
+                    <choose>
+                        <when test="cond.field == 'TITLE'">
+                            AND (
+                            B.BOOK_TITLE LIKE CONCAT('%', #{cond.keyword}, '%')
+                            <if test="cond.keywordNs != null and cond.keywordNs != '' and cond.keywordNs != cond.keyword">
+                                OR B.BOOK_TITLE LIKE CONCAT('%', #{cond.keywordNs}, '%')
+                            </if>
+                            )
+                        </when>
+
+                        <when test="cond.field == 'AUTHOR'">
+                            AND (
+                            B.AUTHORS LIKE CONCAT('%', #{cond.keyword}, '%')
+                            <if test="cond.keywordNs != null and cond.keywordNs != '' and cond.keywordNs != cond.keyword">
+                                OR B.AUTHORS LIKE CONCAT('%', #{cond.keywordNs}, '%')
+                            </if>
+                            )
+                        </when>
+
+                        <when test="cond.field == 'PUBLISHER'">
+                            AND (
+                            B.PUBLISHER LIKE CONCAT('%', #{cond.keyword}, '%')
+                            <if test="cond.keywordNs != null and cond.keywordNs != '' and cond.keywordNs != cond.keyword">
+                                OR B.PUBLISHER LIKE CONCAT('%', #{cond.keywordNs}, '%')
+                            </if>
+                            )
+                        </when>
+
+                        <otherwise>
+                            AND (
+                            B.BOOK_TITLE LIKE CONCAT('%', #{cond.keyword}, '%')
+                            OR B.AUTHORS LIKE CONCAT('%', #{cond.keyword}, '%')
+                            OR B.PUBLISHER LIKE CONCAT('%', #{cond.keyword}, '%')
+                            )
+                        </otherwise>
+                    </choose>
+                </otherwise>
+            </choose>
+        </if>
+    </sql>
+
+    <sql id="WhereDomesticParent">
+        AND B.GENRE_ID IN (
+            SELECT GENRE_ID
+            FROM GENRE
+            WHERE PARENT_ID = #{cond.parentGenreId}
+        )
+    </sql>
+
+    <sql id="WhereForeignParent">
+        <choose>
+            <when test="cond.parentGenreId &lt; 0">
+                <if test="cond.foreignTopParentIds != null and cond.foreignTopParentIds.size() &gt; 0">
+                    AND COALESCE(P.GENRE_ID, G.GENRE_ID) NOT IN
+                    <foreach collection="cond.foreignTopParentIds" item="id" open="(" separator="," close=")">
+                        #{id}
+                    </foreach>
+                </if>
+            </when>
+
+            <otherwise>
+                AND COALESCE(P.GENRE_ID, G.GENRE_ID) = #{cond.parentGenreId}
+            </otherwise>
+        </choose>
+    </sql>
+
 
     <sql id="BaseWhere">
         <where>
             <if test="cond.mall != null and cond.mall != '' and cond.mall != 'ALL'">
-                AND g.MALL = #{cond.mall}
+                AND G.MALL = #{cond.mall}
             </if>
 
-            <if test="cond.keyword != null and cond.keyword != ''">
-                <choose>
-                    <when test="cond.useFulltext != null and cond.useFulltext == true">
-                        <choose>
-                            <when test="cond.field == 'TITLE'">
-                                AND (
-                                <if test="cond.ftKeyword != null and cond.ftKeyword != ''">
-                                    MATCH(b.BOOK_TITLE, b.AUTHORS, b.PUBLISHER) AGAINST (#{cond.ftKeyword} IN BOOLEAN MODE)
-                                </if>
-                                <if test="cond.ftJoined != null and cond.ftJoined != ''">
-                                    <if test="cond.ftKeyword != null and cond.ftKeyword != ''"> OR </if>
-                                    MATCH(b.BOOK_TITLE, b.AUTHORS, b.PUBLISHER) AGAINST (#{cond.ftJoined} IN BOOLEAN MODE)
-                                </if>
-                                )
-                            </when>
-
-                            <when test="cond.field == 'AUTHOR'">
-                                AND (
-                                MATCH(b.AUTHORS) AGAINST (#{cond.ftKeyword} IN BOOLEAN MODE)
-                                <if test="cond.ftJoined != null and cond.ftJoined != ''">
-                                    OR MATCH(b.AUTHORS) AGAINST (#{cond.ftJoined} IN BOOLEAN MODE)
-                                </if>
-                                )
-                            </when>
-
-                            <when test="cond.field == 'PUBLISHER'">
-                                AND (
-                                MATCH(b.PUBLISHER) AGAINST (#{cond.ftKeyword} IN BOOLEAN MODE)
-                                <if test="cond.ftJoined != null and cond.ftJoined != ''">
-                                    OR MATCH(b.PUBLISHER) AGAINST (#{cond.ftJoined} IN BOOLEAN MODE)
-                                </if>
-                                )
-                            </when>
-
-                            <otherwise>
-                                AND (
-                                MATCH(b.BOOK_TITLE, b.AUTHORS, b.PUBLISHER) AGAINST (#{cond.ftKeyword} IN BOOLEAN MODE)
-                                <if test="cond.ftJoined != null and cond.ftJoined != ''">
-                                    OR MATCH(b.BOOK_TITLE, b.AUTHORS, b.PUBLISHER) AGAINST (#{cond.ftJoined} IN BOOLEAN MODE)
-                                </if>
-                                )
-                            </otherwise>
-                        </choose>
-                    </when>
-
-                    <otherwise>
-                        <choose>
-                            <when test="cond.field == 'TITLE'">
-                                AND (
-                                b.BOOK_TITLE LIKE CONCAT('%', #{cond.keyword}, '%')
-                                <if test="cond.keywordNs != null and cond.keywordNs != '' and cond.keywordNs != cond.keyword">
-                                    OR b.BOOK_TITLE LIKE CONCAT('%', #{cond.keywordNs}, '%')
-                                </if>
-                                )
-                            </when>
-
-                            <when test="cond.field == 'AUTHOR'">
-                                AND (
-                                b.AUTHORS LIKE CONCAT('%', #{cond.keyword}, '%')
-                                <if test="cond.keywordNs != null and cond.keywordNs != '' and cond.keywordNs != cond.keyword">
-                                    OR b.AUTHORS LIKE CONCAT('%', #{cond.keywordNs}, '%')
-                                </if>
-                                )
-                            </when>
-
-                            <when test="cond.field == 'PUBLISHER'">
-                                AND (
-                                b.PUBLISHER LIKE CONCAT('%', #{cond.keyword}, '%')
-                                <if test="cond.keywordNs != null and cond.keywordNs != '' and cond.keywordNs != cond.keyword">
-                                    OR b.PUBLISHER LIKE CONCAT('%', #{cond.keywordNs}, '%')
-                                </if>
-                                )
-                            </when>
-
-                            <otherwise>
-                                AND (
-                                b.BOOK_TITLE LIKE CONCAT('%', #{cond.keyword}, '%')
-                                OR b.AUTHORS LIKE CONCAT('%', #{cond.keyword}, '%')
-                                OR b.PUBLISHER LIKE CONCAT('%', #{cond.keyword}, '%')
-                                )
-                            </otherwise>
-                        </choose>
-                    </otherwise>
-                </choose>
-            </if>
+            <include refid="WhereKeyword"/>
 
             <if test="cond.genreId != null and cond.genreId &gt; 0">
-                AND b.GENRE_ID = #{cond.genreId}
+                AND B.GENRE_ID = #{cond.genreId}
             </if>
 
             <if test="(cond.genreId == null or cond.genreId &lt;= 0) and cond.parentGenreId != null">
                 <choose>
                     <when test="cond.mall != null and cond.mall.trim() == '국내도서'">
-                        AND b.GENRE_ID IN (
-                        SELECT GENRE_ID
-                        FROM GENRE
-                        WHERE PARENT_ID = #{cond.parentGenreId}
-                        )
+                        <include refid="WhereDomesticParent"/>
                     </when>
 
                     <when test="cond.mall != null and cond.mall.trim() == '외국도서'">
-                        <choose>
-                            <when test="cond.parentGenreId &lt; 0">
-                                AND NOT EXISTS (
-                                SELECT 1
-                                FROM (
-                                SELECT parent_id
-                                FROM (
-                                SELECT
-                                COALESCE(p2.GENRE_ID, g2.GENRE_ID) AS parent_id,
-                                COUNT(*) AS cnt
-                                FROM BOOK_ISBN b2
-                                JOIN GENRE g2 ON g2.GENRE_ID = b2.GENRE_ID
-                                LEFT JOIN GENRE p2 ON p2.GENRE_ID = g2.PARENT_ID
-                                WHERE g2.MALL = '외국도서'
-                                AND b2.EBOOK_YN = 'N'
-                                GROUP BY COALESCE(p2.GENRE_ID, g2.GENRE_ID)
-                                ) x
-                                ORDER BY x.cnt DESC, x.parent_id ASC
-                                LIMIT 19
-                                ) t
-                                WHERE t.parent_id = COALESCE(p.GENRE_ID, g.GENRE_ID)
-                                )
-                            </when>
-
-                            <otherwise>
-                                AND COALESCE(p.GENRE_ID, g.GENRE_ID) = #{cond.parentGenreId}
-                            </otherwise>
-                        </choose>
+                        <include refid="WhereForeignParent"/>
                     </when>
 
                     <otherwise>
@@ -185,637 +226,172 @@
             </if>
 
             <if test="cond.ebookYn != null and cond.ebookYn.trim() != '' and cond.ebookYn.trim() != 'ALL'">
-                AND b.EBOOK_YN = #{cond.ebookYn}
+                AND B.EBOOK_YN = #{cond.ebookYn}
             </if>
-
         </where>
     </sql>
 
-    <!-- =========================================================
-         searchBooks
-         ========================================================= -->
-    <select id="searchBooks" resultType="com.booknara.booknaraPrj.bookSearch.dto.BookSearchDTO">
+    <sql id="CteAvailability">
+        owned AS (
+            SELECT BO.ISBN13, COUNT(*) AS ownedCnt
+            FROM BOOKS BO
+            JOIN base ON base.ISBN13 = BO.ISBN13
+            WHERE BO.BOOK_STATE = 'N'
+            GROUP BY BO.ISBN13
+        ),
+        lending AS (
+            SELECT BX.ISBN13, COUNT(*) AS lendingCnt
+            FROM LENDS L
+            JOIN BOOKS BX ON BX.BOOK_ID = L.BOOK_ID
+            JOIN base ON base.ISBN13 = BX.ISBN13
+            WHERE L.RETURN_DONE_AT IS NULL
+            GROUP BY BX.ISBN13
+        ),
+        rsv AS (
+            SELECT
+                R.ISBN13,
+                COUNT(*) AS rsvActiveCnt,
+                CASE WHEN COUNT(*) &gt;= 10 THEN 'Y' ELSE 'N' END AS rsvLimitYn
+            FROM RESERVATIONS R
+            JOIN base ON base.ISBN13 = R.ISBN13
+            WHERE R.RSV_STATUS = 'ACTIVE'
+            GROUP BY R.ISBN13
+        )
+    </sql>
 
+    <sql id="CteUserDetails">
+        <if test="userId != null and userId != ''">
+            ,
+            my_lend_detail AS (
+            SELECT
+            BX.ISBN13,
+            MAX(L.LEND_ID) AS myLendId,
+            'Y' AS myLendYn,
+            CASE
+            WHEN MAX(L.EXTEND_CNT) = 0
+            AND MAX(L.RETURN_DUE_DATE) &lt;= (NOW() + INTERVAL 7 DAY)
+            THEN 'Y' ELSE 'N'
+            END AS myExtendYn
+            FROM LENDS L
+            JOIN BOOKS BX ON BX.BOOK_ID = L.BOOK_ID
+            JOIN base ON base.ISBN13 = BX.ISBN13
+            WHERE L.USER_ID = #{userId}
+            AND L.RETURN_DONE_AT IS NULL
+            GROUP BY BX.ISBN13
+            ),
+            my_rsv_detail AS (
+            SELECT
+            R.ISBN13,
+            MAX(R.RSV_ID) AS myRsvId,
+            'Y' AS myRsvYn
+            FROM RESERVATIONS R
+            JOIN base ON base.ISBN13 = R.ISBN13
+            WHERE R.USER_ID = #{userId}
+            AND R.RSV_STATUS = 'ACTIVE'
+            GROUP BY R.ISBN13
+            ),
+            user_flags AS (
+            SELECT
+            CASE WHEN U.USER_STATE IN (3,4) THEN 'Y' ELSE 'N' END AS userBlockedYn,
+            CASE WHEN EXISTS (
+            SELECT 1
+            FROM LENDS L2
+            WHERE L2.USER_ID = #{userId}
+            AND L2.RETURN_DONE_AT IS NULL
+            AND L2.OVER_DUE = 'Y'
+            ) THEN 'Y' ELSE 'N' END AS userOverdueYn
+            FROM USERS U
+            WHERE U.USER_ID = #{userId}
+            )
+        </if>
+    </sql>
+
+    <sql id="SelectFinalUserCols">
         <choose>
+            <when test="userId != null and userId != ''">
+                IFNULL(my_lend_detail.myLendYn, 'N')       AS myLendYn,
+                IFNULL(my_lend_detail.myExtendYn, 'N')     AS myExtendYn,
+                my_lend_detail.myLendId                    AS myLendId,
 
-            <!-- =========================================================
-                 FAST PATH #1 : RATING / REVIEW (필터 없음)
-                 ========================================================= -->
-            <when test="(cond.sort == 'RATING' or cond.sort == 'REVIEW')
-                and (cond.keyword == null or cond.keyword == '')
-                and (cond.genreId == null or cond.genreId &lt;= 0)
-                and (cond.parentGenreId == null)">
+                IFNULL(my_rsv_detail.myRsvYn, 'N')         AS myRsvYn,
+                my_rsv_detail.myRsvId                      AS myRsvId,
 
-                WITH
-                base AS (
-                SELECT
-                b.ISBN13           AS isbn13,
-                b.BOOK_TITLE       AS bookTitle,
-                b.AUTHORS          AS authors,
-                b.PUBLISHER        AS publisher,
-                b.PUBDATE          AS pubdate,
-                b.DESCRIPTION      AS description,
-                b.NAVER_IMAGE      AS naverImage,
-                b.ALADIN_IMAGE_BIG AS aladinImageBig,
-                b.EBOOK_YN         AS ebookYn,
-                b.GENRE_ID         AS genreId,
-                g.GENRE_NM         AS genreNm,
-                rs.RATING_AVG      AS ratingAvg,
-                rs.REVIEW_CNT      AS reviewCnt
-
-                <choose>
-                    <when test="userId != null and userId != ''">
-                        , CASE WHEN bm.USER_ID IS NULL THEN 'N' ELSE 'Y' END AS bookmarkedYn
-                    </when>
-                    <otherwise>
-                        , 'N' AS bookmarkedYn
-                    </otherwise>
-                </choose>
-                <choose>
-                    <when test="userId != null and userId != ''">
-                        , CASE WHEN EXISTS(
-                        SELECT 1
-                        FROM BOOKS_CART c
-                        WHERE c.USER_ID = #{userId}
-                        AND c.ISBN13  = b.ISBN13
-                        ) THEN 'Y' ELSE 'N' END AS myCartYn
-                        , (
-                        SELECT c.CART_ID
-                        FROM BOOKS_CART c
-                        WHERE c.USER_ID = #{userId}
-                        AND c.ISBN13  = b.ISBN13
-                        ORDER BY c.CART_ID DESC
-                        LIMIT 1
-                        ) AS myCartId
-                    </when>
-                    <otherwise>
-                        , 'N' AS myCartYn
-                        , NULL AS myCartId
-                    </otherwise>
-                </choose>
-
-
-
-
-
-                FROM REVIEW_STAT rs
-                JOIN BOOK_ISBN b ON b.ISBN13 = rs.ISBN13
-                JOIN GENRE g ON g.GENRE_ID = b.GENRE_ID
-
-                <if test="userId != null and userId != ''">
-                    LEFT JOIN BOOKMARK bm
-                    ON bm.ISBN13 = b.ISBN13
-                    AND bm.USER_ID = #{userId}
-                </if>
-
-                <where>
-                    <if test="cond.mall != null and cond.mall != '' and cond.mall != 'ALL'">
-                        AND g.MALL = #{cond.mall}
-                    </if>
-                    <if test="cond.ebookYn != null and cond.ebookYn.trim() != '' and cond.ebookYn.trim() != 'ALL'">
-                        AND b.EBOOK_YN = #{cond.ebookYn}
-                    </if>
-                </where>
-
-                <choose>
-                    <when test="cond.sort == 'RATING'">
-                        ORDER BY rs.RATING_AVG DESC, b.PUBDATE DESC
-                    </when>
-                    <otherwise>
-                        ORDER BY rs.REVIEW_CNT DESC, b.PUBDATE DESC
-                    </otherwise>
-                </choose>
-                LIMIT #{page.offset}, #{page.size}
-                ),
-
-                owned AS (
-                SELECT bo.ISBN13, COUNT(*) AS ownedCnt
-                FROM BOOKS bo
-                JOIN base ON base.isbn13 = bo.ISBN13
-                WHERE bo.BOOK_STATE = 'N'
-                GROUP BY bo.ISBN13
-                ),
-
-                lending AS (
-                SELECT bx.ISBN13, COUNT(*) AS lendingCnt
-                FROM LENDS l
-                JOIN BOOKS bx ON bx.BOOK_ID = l.BOOK_ID
-                JOIN base ON base.isbn13 = bx.ISBN13
-                WHERE l.RETURN_DONE_AT IS NULL
-                GROUP BY bx.ISBN13
-                ),
-
-                rsv AS (
-                SELECT
-                r.ISBN13,
-                COUNT(*) AS rsvActiveCnt,
-                CASE WHEN COUNT(*) &gt;= 10 THEN 'Y' ELSE 'N' END AS rsvLimitYn
-                FROM RESERVATIONS r
-                JOIN base ON base.isbn13 = r.ISBN13
-                WHERE r.RSV_STATUS = 'ACTIVE'
-                GROUP BY r.ISBN13
-                )
-
-                <if test="userId != null and userId != ''">
-                    ,
-                    my_lend_detail AS (
-                    SELECT
-                    bx.ISBN13,
-                    MAX(l.LEND_ID) AS myLendId,
-                    'Y' AS myLendYn,
-                    CASE
-                    WHEN MAX(l.EXTEND_CNT) = 0
-                    AND MAX(l.RETURN_DUE_DATE) &lt;= (NOW() + INTERVAL 7 DAY)
-                    THEN 'Y' ELSE 'N'
-                    END AS myExtendYn
-                    FROM LENDS l
-                    JOIN BOOKS bx ON bx.BOOK_ID = l.BOOK_ID
-                    JOIN base ON base.isbn13 = bx.ISBN13
-                    WHERE l.USER_ID = #{userId}
-                    AND l.RETURN_DONE_AT IS NULL
-                    GROUP BY bx.ISBN13
-                    ),
-                    my_rsv_detail AS (
-                    SELECT
-                    r.ISBN13,
-                    MAX(r.RSV_ID) AS myRsvId,
-                    'Y' AS myRsvYn
-                    FROM RESERVATIONS r
-                    JOIN base ON base.isbn13 = r.ISBN13
-                    WHERE r.USER_ID = #{userId}
-                    AND r.RSV_STATUS = 'ACTIVE'
-                    GROUP BY r.ISBN13
-                    ),
-                    user_blocked AS (
-                    SELECT
-                    CASE WHEN u.USER_STATE IN (3,4) THEN 'Y' ELSE 'N' END AS userBlockedYn
-                    FROM USERS u
-                    WHERE u.USER_ID = #{userId}
-                    ),
-                    user_overdue AS (
-                    SELECT
-                    CASE WHEN EXISTS (
-                    SELECT 1
-                    FROM LENDS l
-                    WHERE l.USER_ID = #{userId}
-                    AND l.RETURN_DONE_AT IS NULL
-                    AND l.OVER_DUE = 'Y'
-                    ) THEN 'Y' ELSE 'N' END AS userOverdueYn
-                    )
-                </if>
-
-                SELECT
-                base.*,
-                IFNULL(owned.ownedCnt, 0)      AS ownedCnt,
-                IFNULL(lending.lendingCnt, 0)  AS lendingCnt,
-                IFNULL(rsv.rsvActiveCnt, 0)    AS rsvActiveCnt,
-                GREATEST(IFNULL(owned.ownedCnt,0) - IFNULL(lending.lendingCnt,0), 0) AS availableCnt,
-                IFNULL(rsv.rsvLimitYn, 'N')    AS rsvLimitYn,
-
-                <choose>
-                    <when test="userId != null and userId != ''">
-                        IFNULL(my_lend_detail.myLendYn, 'N')     AS myLendYn,
-                        IFNULL(my_lend_detail.myExtendYn, 'N')   AS myExtendYn,
-                        my_lend_detail.myLendId                 AS myLendId,
-
-                        IFNULL(my_rsv_detail.myRsvYn, 'N')       AS myRsvYn,
-                        my_rsv_detail.myRsvId                   AS myRsvId,
-
-                        (SELECT userBlockedYn FROM user_blocked) AS userBlockedYn,
-                        (SELECT userOverdueYn FROM user_overdue) AS userOverdueYn
-                    </when>
-                    <otherwise>
-                        'N' AS myLendYn,
-                        'N' AS myExtendYn,
-                        NULL AS myLendId,
-                        'N' AS myRsvYn,
-                        NULL AS myRsvId,
-                        'N' AS userBlockedYn,
-                        'N' AS userOverdueYn
-                    </otherwise>
-                </choose>
-
-                FROM base
-                LEFT JOIN owned   ON owned.ISBN13 = base.isbn13
-                LEFT JOIN lending ON lending.ISBN13 = base.isbn13
-                LEFT JOIN rsv     ON rsv.ISBN13 = base.isbn13
-
-                <if test="userId != null and userId != ''">
-                    LEFT JOIN my_lend_detail ON my_lend_detail.ISBN13 = base.isbn13
-                    LEFT JOIN my_rsv_detail  ON my_rsv_detail.ISBN13  = base.isbn13
-                </if>
-
-                <choose>
-                    <when test="cond.sort == 'RATING'">
-                        ORDER BY base.ratingAvg DESC, base.pubdate DESC
-                    </when>
-                    <otherwise>
-                        ORDER BY base.reviewCnt DESC, base.pubdate DESC
-                    </otherwise>
-                </choose>
-
+                user_flags.userBlockedYn                   AS userBlockedYn,
+                user_flags.userOverdueYn                   AS userOverdueYn
             </when>
-
-            <!-- =========================================================
-                 FAST PATH #2 : NEW (필터 없음)
-                 ========================================================= -->
-            <when test="(cond.sort == null or cond.sort == 'NEW')
-                and (cond.keyword == null or cond.keyword == '')
-                and (cond.genreId == null or cond.genreId &lt;= 0)
-                and (cond.parentGenreId == null)">
-
-                WITH
-                base AS (
-                SELECT
-                b.ISBN13           AS isbn13,
-                b.BOOK_TITLE       AS bookTitle,
-                b.AUTHORS          AS authors,
-                b.PUBLISHER        AS publisher,
-                b.PUBDATE          AS pubdate,
-                b.DESCRIPTION      AS description,
-                b.NAVER_IMAGE      AS naverImage,
-                b.ALADIN_IMAGE_BIG AS aladinImageBig,
-                b.EBOOK_YN         AS ebookYn,
-                b.GENRE_ID         AS genreId,
-                g.GENRE_NM         AS genreNm,
-                rs.RATING_AVG            AS ratingAvg,
-                IFNULL(rs.REVIEW_CNT, 0) AS reviewCnt
-
-                <choose>
-                    <when test="userId != null and userId != ''">
-                        , CASE WHEN bm.USER_ID IS NULL THEN 'N' ELSE 'Y' END AS bookmarkedYn
-                    </when>
-                    <otherwise>
-                        , 'N' AS bookmarkedYn
-                    </otherwise>
-                </choose>
-                <choose>
-                    <when test="userId != null and userId != ''">
-                        , CASE WHEN EXISTS(
-                        SELECT 1
-                        FROM BOOKS_CART c
-                        WHERE c.USER_ID = #{userId}
-                        AND c.ISBN13  = b.ISBN13
-                        ) THEN 'Y' ELSE 'N' END AS myCartYn
-                        , (
-                        SELECT c.CART_ID
-                        FROM BOOKS_CART c
-                        WHERE c.USER_ID = #{userId}
-                        AND c.ISBN13  = b.ISBN13
-                        ORDER BY c.CART_ID DESC
-                        LIMIT 1
-                        ) AS myCartId
-                    </when>
-                    <otherwise>
-                        , 'N' AS myCartYn
-                        , NULL AS myCartId
-                    </otherwise>
-                </choose>
-
-
-
-
-                FROM BOOK_ISBN b
-                JOIN GENRE g ON g.GENRE_ID = b.GENRE_ID
-                LEFT JOIN REVIEW_STAT rs ON rs.ISBN13 = b.ISBN13
-
-                <if test="userId != null and userId != ''">
-                    LEFT JOIN BOOKMARK bm
-                    ON bm.ISBN13 = b.ISBN13
-                    AND bm.USER_ID = #{userId}
-                </if>
-
-                <where>
-                    <if test="cond.mall != null and cond.mall != '' and cond.mall != 'ALL'">
-                        AND g.MALL = #{cond.mall}
-                    </if>
-                    <if test="cond.ebookYn != null and cond.ebookYn.trim() != '' and cond.ebookYn.trim() != 'ALL'">
-                        AND b.EBOOK_YN = #{cond.ebookYn}
-                    </if>
-                </where>
-                ORDER BY b.PUBDATE DESC
-                LIMIT #{page.offset}, #{page.size}
-                ),
-
-                owned AS (
-                SELECT bo.ISBN13, COUNT(*) AS ownedCnt
-                FROM BOOKS bo
-                JOIN base ON base.isbn13 = bo.ISBN13
-                WHERE bo.BOOK_STATE = 'N'
-                GROUP BY bo.ISBN13
-                ),
-
-                lending AS (
-                SELECT bx.ISBN13, COUNT(*) AS lendingCnt
-                FROM LENDS l
-                JOIN BOOKS bx ON bx.BOOK_ID = l.BOOK_ID
-                JOIN base ON base.isbn13 = bx.ISBN13
-                WHERE l.RETURN_DONE_AT IS NULL
-                GROUP BY bx.ISBN13
-                ),
-
-                rsv AS (
-                SELECT
-                r.ISBN13,
-                COUNT(*) AS rsvActiveCnt,
-                CASE WHEN COUNT(*) &gt;= 10 THEN 'Y' ELSE 'N' END AS rsvLimitYn
-                FROM RESERVATIONS r
-                JOIN base ON base.isbn13 = r.ISBN13
-                WHERE r.RSV_STATUS = 'ACTIVE'
-                GROUP BY r.ISBN13
-                )
-
-                <if test="userId != null and userId != ''">
-                    ,
-                    my_lend_detail AS (
-                    SELECT
-                    bx.ISBN13,
-                    MAX(l.LEND_ID) AS myLendId,
-                    'Y' AS myLendYn,
-                    CASE
-                    WHEN MAX(l.EXTEND_CNT) = 0
-                    AND MAX(l.RETURN_DUE_DATE) &lt;= (NOW() + INTERVAL 7 DAY)
-                    THEN 'Y' ELSE 'N'
-                    END AS myExtendYn
-                    FROM LENDS l
-                    JOIN BOOKS bx ON bx.BOOK_ID = l.BOOK_ID
-                    JOIN base ON base.isbn13 = bx.ISBN13
-                    WHERE l.USER_ID = #{userId}
-                    AND l.RETURN_DONE_AT IS NULL
-                    GROUP BY bx.ISBN13
-                    ),
-                    my_rsv_detail AS (
-                    SELECT
-                    r.ISBN13,
-                    MAX(r.RSV_ID) AS myRsvId,
-                    'Y' AS myRsvYn
-                    FROM RESERVATIONS r
-                    JOIN base ON base.isbn13 = r.ISBN13
-                    WHERE r.USER_ID = #{userId}
-                    AND r.RSV_STATUS = 'ACTIVE'
-                    GROUP BY r.ISBN13
-                    ),
-                    user_blocked AS (
-                    SELECT
-                    CASE WHEN u.USER_STATE IN (3,4) THEN 'Y' ELSE 'N' END AS userBlockedYn
-                    FROM USERS u
-                    WHERE u.USER_ID = #{userId}
-                    ),
-                    user_overdue AS (
-                    SELECT
-                    CASE WHEN EXISTS (
-                    SELECT 1
-                    FROM LENDS l
-                    WHERE l.USER_ID = #{userId}
-                    AND l.RETURN_DONE_AT IS NULL
-                    AND l.OVER_DUE = 'Y'
-                    ) THEN 'Y' ELSE 'N' END AS userOverdueYn
-                    )
-                </if>
-
-                SELECT
-                base.*,
-                IFNULL(owned.ownedCnt, 0)      AS ownedCnt,
-                IFNULL(lending.lendingCnt, 0)  AS lendingCnt,
-                IFNULL(rsv.rsvActiveCnt, 0)    AS rsvActiveCnt,
-                GREATEST(IFNULL(owned.ownedCnt,0) - IFNULL(lending.lendingCnt,0), 0) AS availableCnt,
-                IFNULL(rsv.rsvLimitYn, 'N')    AS rsvLimitYn,
-
-                <choose>
-                    <when test="userId != null and userId != ''">
-                        IFNULL(my_lend_detail.myLendYn, 'N')     AS myLendYn,
-                        IFNULL(my_lend_detail.myExtendYn, 'N')   AS myExtendYn,
-                        my_lend_detail.myLendId                 AS myLendId,
-
-                        IFNULL(my_rsv_detail.myRsvYn, 'N')       AS myRsvYn,
-                        my_rsv_detail.myRsvId                   AS myRsvId,
-
-                        (SELECT userBlockedYn FROM user_blocked) AS userBlockedYn,
-                        (SELECT userOverdueYn FROM user_overdue) AS userOverdueYn
-                    </when>
-                    <otherwise>
-                        'N' AS myLendYn,
-                        'N' AS myExtendYn,
-                        NULL AS myLendId,
-                        'N' AS myRsvYn,
-                        NULL AS myRsvId,
-                        'N' AS userBlockedYn,
-                        'N' AS userOverdueYn
-                    </otherwise>
-                </choose>
-
-                FROM base
-                LEFT JOIN owned   ON owned.ISBN13 = base.isbn13
-                LEFT JOIN lending ON lending.ISBN13 = base.isbn13
-                LEFT JOIN rsv     ON rsv.ISBN13 = base.isbn13
-
-                <if test="userId != null and userId != ''">
-                    LEFT JOIN my_lend_detail ON my_lend_detail.ISBN13 = base.isbn13
-                    LEFT JOIN my_rsv_detail  ON my_rsv_detail.ISBN13  = base.isbn13
-                </if>
-
-                ORDER BY base.pubdate DESC
-
-            </when>
-
-            <!-- =========================================================
-                 GENERAL PATH : 검색/장르/Top19 등 복잡 필터
-                 ========================================================= -->
             <otherwise>
-
-                WITH
-                base AS (
-                SELECT
-                b.ISBN13           AS isbn13,
-                b.BOOK_TITLE       AS bookTitle,
-                b.AUTHORS          AS authors,
-                b.PUBLISHER        AS publisher,
-                b.PUBDATE          AS pubdate,
-                b.DESCRIPTION      AS description,
-                b.NAVER_IMAGE      AS naverImage,
-                b.ALADIN_IMAGE_BIG AS aladinImageBig,
-                b.EBOOK_YN         AS ebookYn,
-                b.GENRE_ID         AS genreId,
-                g.GENRE_NM         AS genreNm,
-                rs.RATING_AVG            AS ratingAvg,
-                IFNULL(rs.REVIEW_CNT, 0) AS reviewCnt
-                <choose>
-                    <when test="userId != null and userId != ''">
-                        , CASE WHEN bm.USER_ID IS NULL THEN 'N' ELSE 'Y' END AS bookmarkedYn
-                    </when>
-                    <otherwise>
-                        , 'N' AS bookmarkedYn
-                    </otherwise>
-                </choose>
-                <choose>
-                    <when test="userId != null and userId != ''">
-                        , CASE WHEN bc.CART_ID IS NULL THEN 'N' ELSE 'Y' END AS myCartYn
-                        , bc.CART_ID AS myCartId
-                    </when>
-                    <otherwise>
-                        , 'N' AS myCartYn
-                        , NULL AS myCartId
-                    </otherwise>
-                </choose>
-
-                <include refid="BaseFrom"/>
-                <include refid="ReviewStatJoin"/>
-                <include refid="BaseWhere"/>
-                <choose>
-                    <when test="cond.sort == 'RATING'">
-                        ORDER BY (rs.RATING_AVG IS NULL) ASC, rs.RATING_AVG DESC, b.PUBDATE DESC
-                    </when>
-                    <when test="cond.sort == 'REVIEW'">
-                        ORDER BY IFNULL(rs.REVIEW_CNT,0) DESC, b.PUBDATE DESC
-                    </when>
-                    <otherwise>
-                        ORDER BY b.PUBDATE DESC
-                    </otherwise>
-                </choose>
-                LIMIT #{page.offset}, #{page.size}
-                ),
-
-                owned AS (
-                SELECT bo.ISBN13, COUNT(*) AS ownedCnt
-                FROM BOOKS bo
-                JOIN base ON base.isbn13 = bo.ISBN13
-                WHERE bo.BOOK_STATE = 'N'
-                GROUP BY bo.ISBN13
-                ),
-
-                lending AS (
-                SELECT bx.ISBN13, COUNT(*) AS lendingCnt
-                FROM LENDS l
-                JOIN BOOKS bx ON bx.BOOK_ID = l.BOOK_ID
-                JOIN base ON base.isbn13 = bx.ISBN13
-                WHERE l.RETURN_DONE_AT IS NULL
-                GROUP BY bx.ISBN13
-                ),
-
-                rsv AS (
-                SELECT
-                r.ISBN13,
-                COUNT(*) AS rsvActiveCnt,
-                CASE WHEN COUNT(*) &gt;= 10 THEN 'Y' ELSE 'N' END AS rsvLimitYn
-                FROM RESERVATIONS r
-                JOIN base ON base.isbn13 = r.ISBN13
-                WHERE r.RSV_STATUS = 'ACTIVE'
-                GROUP BY r.ISBN13
-                )
-
-                <if test="userId != null and userId != ''">
-                    ,
-                    my_lend_detail AS (
-                    SELECT
-                    bx.ISBN13,
-                    MAX(l.LEND_ID) AS myLendId,
-                    'Y' AS myLendYn,
-                    CASE
-                    WHEN MAX(l.EXTEND_CNT) = 0
-                    AND MAX(l.RETURN_DUE_DATE) &lt;= (NOW() + INTERVAL 7 DAY)
-                    THEN 'Y' ELSE 'N'
-                    END AS myExtendYn
-                    FROM LENDS l
-                    JOIN BOOKS bx ON bx.BOOK_ID = l.BOOK_ID
-                    JOIN base ON base.isbn13 = bx.ISBN13
-                    WHERE l.USER_ID = #{userId}
-                    AND l.RETURN_DONE_AT IS NULL
-                    GROUP BY bx.ISBN13
-                    ),
-                    my_rsv_detail AS (
-                    SELECT
-                    r.ISBN13,
-                    MAX(r.RSV_ID) AS myRsvId,
-                    'Y' AS myRsvYn
-                    FROM RESERVATIONS r
-                    JOIN base ON base.isbn13 = r.ISBN13
-                    WHERE r.USER_ID = #{userId}
-                    AND r.RSV_STATUS = 'ACTIVE'
-                    GROUP BY r.ISBN13
-                    ),
-                    user_blocked AS (
-                    SELECT
-                    CASE WHEN u.USER_STATE IN (3,4) THEN 'Y' ELSE 'N' END AS userBlockedYn
-                    FROM USERS u
-                    WHERE u.USER_ID = #{userId}
-                    ),
-                    user_overdue AS (
-                    SELECT
-                    CASE WHEN EXISTS (
-                    SELECT 1
-                    FROM LENDS l
-                    WHERE l.USER_ID = #{userId}
-                    AND l.RETURN_DONE_AT IS NULL
-                    AND l.OVER_DUE = 'Y'
-                    ) THEN 'Y' ELSE 'N' END AS userOverdueYn
-                    )
-                </if>
-
-                SELECT
-                base.*,
-                IFNULL(owned.ownedCnt, 0)      AS ownedCnt,
-                IFNULL(lending.lendingCnt, 0)  AS lendingCnt,
-                IFNULL(rsv.rsvActiveCnt, 0)    AS rsvActiveCnt,
-                GREATEST(IFNULL(owned.ownedCnt,0) - IFNULL(lending.lendingCnt,0), 0) AS availableCnt,
-                IFNULL(rsv.rsvLimitYn, 'N')    AS rsvLimitYn,
-
-                <choose>
-                    <when test="userId != null and userId != ''">
-                        IFNULL(my_lend_detail.myLendYn, 'N')      AS myLendYn,
-                        IFNULL(my_lend_detail.myExtendYn, 'N')    AS myExtendYn,
-                        my_lend_detail.myLendId                  AS myLendId,
-
-                        IFNULL(my_rsv_detail.myRsvYn, 'N')        AS myRsvYn,
-                        my_rsv_detail.myRsvId                    AS myRsvId,
-
-                        (SELECT userBlockedYn FROM user_blocked)  AS userBlockedYn,
-                        (SELECT userOverdueYn FROM user_overdue)  AS userOverdueYn
-                    </when>
-                    <otherwise>
-                        'N' AS myLendYn,
-                        'N' AS myExtendYn,
-                        NULL AS myLendId,
-                        'N' AS myRsvYn,
-                        NULL AS myRsvId,
-                        'N' AS userBlockedYn,
-                        'N' AS userOverdueYn
-                    </otherwise>
-                </choose>
-
-                FROM base
-                LEFT JOIN owned   ON owned.ISBN13 = base.isbn13
-                LEFT JOIN lending ON lending.ISBN13 = base.isbn13
-                LEFT JOIN rsv     ON rsv.ISBN13 = base.isbn13
-
-                <if test="userId != null and userId != ''">
-                    LEFT JOIN my_lend_detail ON my_lend_detail.ISBN13 = base.isbn13
-                    LEFT JOIN my_rsv_detail  ON my_rsv_detail.ISBN13  = base.isbn13
-                </if>
-
-                <choose>
-                    <when test="cond.sort == 'RATING'">
-                        ORDER BY (base.ratingAvg IS NULL) ASC, base.ratingAvg DESC, base.pubdate DESC
-                    </when>
-                    <when test="cond.sort == 'REVIEW'">
-                        ORDER BY base.reviewCnt DESC, base.pubdate DESC
-                    </when>
-                    <otherwise>
-                        ORDER BY base.pubdate DESC
-                    </otherwise>
-                </choose>
-
+                'N'  AS myLendYn,
+                'N'  AS myExtendYn,
+                NULL AS myLendId,
+                'N'  AS myRsvYn,
+                NULL AS myRsvId,
+                'N'  AS userBlockedYn,
+                'N'  AS userOverdueYn
             </otherwise>
         </choose>
+    </sql>
+
+    <select id="searchBooks" resultType="com.booknara.booknaraPrj.bookSearch.dto.BookSearchDTO">
+
+        WITH
+        base_ids_raw AS (
+        SELECT B.ISBN13
+        FROM BOOK_ISBN B
+        JOIN GENRE G ON G.GENRE_ID = B.GENRE_ID
+        LEFT JOIN GENRE P ON P.GENRE_ID = G.PARENT_ID
+        LEFT JOIN REVIEW_STAT RS ON RS.ISBN13 = B.ISBN13
+        <include refid="BaseWhere"/>
+        <include refid="OrderByBase"/>
+        LIMIT #{page.offset}, #{page.size}
+        ),
+        base_ids AS (
+        SELECT X.ISBN13, (@rn := @rn + 1) AS rn
+        FROM base_ids_raw X
+        CROSS JOIN (SELECT @rn := 0) R
+        ),
+        base AS (
+        SELECT
+        <include refid="SelectBookCols"/>
+        <include refid="SelectUserFlagsCols"/>,
+        IDS.rn AS rn
+        FROM base_ids IDS
+        JOIN BOOK_ISBN B ON B.ISBN13 = IDS.ISBN13
+        JOIN GENRE G ON G.GENRE_ID = B.GENRE_ID
+        LEFT JOIN REVIEW_STAT RS ON RS.ISBN13 = B.ISBN13
+        <include refid="BaseBookmarkJoin"/>
+        <include refid="BaseCartJoin"/>
+        ),
+        <include refid="CteAvailability"/>
+        <include refid="CteUserDetails"/>
+
+        SELECT
+        base.*,
+        IFNULL(owned.ownedCnt, 0)      AS ownedCnt,
+        IFNULL(lending.lendingCnt, 0)  AS lendingCnt,
+        IFNULL(rsv.rsvActiveCnt, 0)    AS rsvActiveCnt,
+        GREATEST(IFNULL(owned.ownedCnt,0) - IFNULL(lending.lendingCnt,0), 0) AS availableCnt,
+        IFNULL(rsv.rsvLimitYn, 'N')    AS rsvLimitYn,
+        <include refid="SelectFinalUserCols"/>
+
+        FROM base
+        LEFT JOIN owned   ON owned.ISBN13   = base.ISBN13
+        LEFT JOIN lending ON lending.ISBN13 = base.ISBN13
+        LEFT JOIN rsv     ON rsv.ISBN13     = base.ISBN13
+
+        <if test="userId != null and userId != ''">
+            LEFT JOIN my_lend_detail ON my_lend_detail.ISBN13 = base.ISBN13
+            LEFT JOIN my_rsv_detail  ON my_rsv_detail.ISBN13  = base.ISBN13
+            CROSS JOIN user_flags
+        </if>
+
+        ORDER BY base.rn
 
     </select>
 
-    <!-- =========================================================
-         countBooks
-         ========================================================= -->
     <sql id="CountFrom">
-        FROM BOOK_ISBN b
-        JOIN GENRE g ON g.GENRE_ID = b.GENRE_ID
-        LEFT JOIN GENRE p ON p.GENRE_ID = g.PARENT_ID
+        FROM BOOK_ISBN B
+        JOIN GENRE G ON G.GENRE_ID = B.GENRE_ID
+        LEFT JOIN GENRE P ON P.GENRE_ID = G.PARENT_ID
     </sql>
 
     <select id="countBooks" resultType="long">

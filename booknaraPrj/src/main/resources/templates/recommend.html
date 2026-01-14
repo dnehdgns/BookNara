@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <!-- CSS -->
+    <link rel="stylesheet" th:href="@{/css/recommend.css}">
+    <link rel="stylesheet" th:href="@{/css/header.css}">
+    <link rel="stylesheet" th:href="@{/css/footer.css}">
+</head>
+<body>
+<div th:replace="fragments/header :: header"></div>
+<!--사이드바-->
+<aside class="side-bar">
+    <div class="side-header">최근 본 책</div>
+    <div class="side-content" id="recentBookList">
+        <!-- JS로 side-item 3개 채워짐 -->
+    </div>
+</aside>
+
+
+<!--해시태그-->
+<section class="recommend-hero">
+    <div class="section-inner">
+        <div class="recommend-wrap">
+            <div class="recommend-mallang">
+                <div class="mallang-float">
+                <img th:src="@{/images/nav1.png}" alt="말랑이">
+                </div>
+            </div>
+            <div class="recommend-tags">
+                <a href="#section-rating" class="tag">#평점</a>
+                <a href="#genre-age" class="tag">#연령</a>
+                <a href="#genre-age" class="tag">#성별</a>
+                <a href="#section-rental" class="tag">#테마</a>
+                <a href="#section-bestseller" class="tag">#베스트셀러</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="section-rating" class="recommend-section">
+    <div class="section-inner">
+        <div class="recommend-header">
+            <h2>평점</h2>
+            <p>독자들이 가장 재미있게 본 책들.</p>
+        </div>
+        <div class="slider-wrap">
+            <button class="slider-btn left" id="prevBtn">‹</button>
+            <button class="slider-btn right" id="nextBtn">›</button>
+            <div class="slider-viewport">
+                <div class="slider-track" id="sliderTrack">
+                    <!-- JS에서 평점 TOP10 카드 생성 -->
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="recommend-section age-gender-section" id="genre-age">
+    <div class="section-inner">
+        <div class="recommend-header">
+            <h2>연령대/성별</h2>
+            <p>나와 비슷한 독자들이 선택한 베스트 도서</p>
+        </div>
+    </div>
+
+    <div class="age-slider-outer">
+        <button class="slider-btn left" id="agePrevBtn">‹</button>
+        <button class="slider-btn right" id="ageNextBtn">›</button>
+
+        <div class="age-viewport">
+            <div class="age-track" id="ageTrack">
+            </div>
+        </div>
+
+        <div class="age-dots" id="ageDots"></div>
+    </div>
+</section>
+    <!--====대여순====-->
+    <section id="section-rental" class="recommend-section rental-section">
+        <div class="section-inner">
+
+            <div class="recommend-header">
+                <h2>대여</h2>
+                <p>북나라에서 가장 사랑받은 책들.</p>
+            </div>
+
+            <div class="rental-list" id="rentalList">
+                <!-- JS로 rental-item이 여기 들어감 -->
+            </div>
+        </div>
+    </section>
+
+
+    <!--주간베스트셀러-->
+
+
+    <section id="section-bestseller" class="recommend-section bestseller-section">
+        <div class="section-inner">
+
+            <div class="recommend-header">
+                <h2>월간 베스트셀러</h2>
+                <p>한 달 동안 가장 많이 빌린 책.</p>
+            </div>
+
+            <div class="rental-list" id="bestsellerList">
+                <!-- JS에서 rental-item 6개 동적 생성 -->
+        </div>
+
+</section>
+
+<div th:replace="fragments/footer :: footer"></div>
+
+<!-- JS -->
+<script th:src="@{/js/recommend.js}"></script>
+</body>
+</html>

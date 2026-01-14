@@ -1,0 +1,119 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background: #f5f5f5;
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+
+/* ================= 레이아웃 ================= */
+.container {
+    display: flex;
+    max-width: 1200px;
+    margin: 30px auto;
+    gap: 20px;
+    padding: 0 28px;
+}
+
+/* ================= 프로필(사이드바 카드) ================= */
+.profile-box {
+    width: 100%;
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.profile-box .profile-img {
+    border: 1px solid black;
+    margin: 0 auto;
+    width: 150px;
+    height: 150px;
+    border-radius: 10%;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.profile-box .profile-name {
+    text-align: center;
+    font-weight: bold;
+    font-size: 20px;
+}
+
+/* 메뉴 */
+.profile-menu {
+    margin-top: 20px;
+}
+
+.profile-menu ul {
+    list-style: none;
+}
+
+.profile-menu li {
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.profile-menu a {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+.profile-menu li.active a {
+    font-weight: bold;
+}
+
+/* ===== 마이페이지 / 문의 공통 글쓰기 버튼 ===== */
+.write-btn {
+    display: block;
+
+    margin-bottom: 12px;
+    padding: 10px 0;
+
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+
+    background: #f59e42;
+
+    color: #fff;
+}
+
+.write-btn:hover {
+    background: #FDBA74;
+}
+
+.profile-menu .write-btn{
+    width: 100%;
+}
+
+.inquiry-title .write-btn{
+    width: 100px;
+}
+
+
+/* ================= 우측 콘텐츠 (🔥 핵심) ================= */
+.mypage-content {
+    flex: 1;                     /* 남은 영역 전부 사용 */
+    min-width: 760px;            /* ✅ 최소 가로 크기 */
+    min-height: 720px;           /* ✅ 최소 세로 크기 */
+    background: #fff;
+    border-radius: 12px;
+    padding: 32px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+
+    /*border:2px solid #FDBA74;*/
+}

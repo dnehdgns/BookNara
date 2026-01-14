@@ -5,6 +5,8 @@ import com.booknara.booknaraPrj.security.oauth.CustomOAuth2UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -12,6 +14,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 @Configuration
 @EnableWebSecurity
@@ -25,48 +29,102 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
-
+        RequestMatcher apiMatcher = request -> request.getRequestURI().startsWith("/api/");
 
         http
                 .csrf(csrf -> csrf.disable())
 
-
-
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET,
+                                "/book/review/list",
+                                "/book/cart/*/status"
+                        ).permitAll()
+
                         .requestMatchers(
-                                "/home",                 // 메인(비로그인 허용이면)
+                                "/home",
                                 "/users/login",
+
+                                "/event/**",
+                                "/information/**",
+                                "/guide",
+                                "/guideDetail",
+                                "/uploads/**",
+                                "/location",
+                                "/locker",
+                                "/flow",
+                                "/schedule",
+                                "/faq",
+                                "/faq/**",
+                                "/notice",
+                                "/inquiry",
+
+
                                 "/users/signup",
+                                "/users/find-account",
                                 "/users/signup-extra",
                                 "/users/check-id",
                                 "/users/check-profile",
                                 "/users/social/**",
+
                                 "/book/search",
                                 "/book/search/list",
-                                "/api/bookmarks/**",
                                 "/book/detail/**",
                                 "/book/genres/**",
+
                                 "/book/reviewstatus/**",
+                                "/book/circulation/status",
+
+                                "/api/bookmarks/**",
+                                "/api/users/**",
+
                                 "/oauth2/**",
                                 "/login/oauth2/**",
                                 "/api/users/**",
+                                "/users/reset-password-form",
+                                "/users/reset-password",
+                                "/recommend/**",
+                                "/api/recommend/**",
+                                "/api/**",
+                                "/api/main/**",
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
-                                "/favicon.ico"
+                                "/favicon.ico",
+                                "/error/*",
+                                "/404",
+                                "/405",
+                                "/500"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.POST,
+                                "/users/find-id",
+                                "/users/find-password",
+                                "/users/verify-code",
+                                "/users/reset-password"
+                        ).permitAll()
+                        .requestMatchers("/api/reports/**").authenticated()
+                        .requestMatchers("/book/cart/**", "/book/order/**").authenticated()
                         .anyRequest().authenticated()
                 )
 
+                .exceptionHandling(ex -> ex
+                                .defaultAuthenticationEntryPointFor(
+                                        new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
+                                        apiMatcher
+                                )
+                )
+
                 .formLogin(form -> form
-                        .loginPage("/users/login")        // ⭐ 로그인 페이지
-                        .loginProcessingUrl("/users/login") // ⭐ POST 로그인 처리
-                        .usernameParameter("userId")     // ⭐ USER_ID
-                        .passwordParameter("password")   // ⭐ PASSWORD
+                        .loginPage("/users/login")
+                        .loginProcessingUrl("/users/login")
+                        .usernameParameter("userId")
+                        .passwordParameter("password")
                         .successHandler(loginSuccessHandler)
                         .failureUrl("/users/login?error")
                         .permitAll()
                 )
+
                 .oauth2Login(oauth -> oauth
                         .loginPage("/users/login")
                         .userInfoEndpoint(userInfo ->
@@ -74,7 +132,6 @@ public class SecurityConfig {
                         )
                         .successHandler(customOAuth2SuccessHandler)
                 )
-
 
                 .logout(logout -> logout
                         .logoutUrl("/logout")

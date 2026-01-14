@@ -21,4 +21,5 @@ public class ReviewItemDTO {
     private String content;       // FEEDS.CONTENT
 
     private LocalDateTime createdAt;
+    private String mineYn;   // "Y" / "N"
 }
