@@ -47,7 +47,7 @@ jobs:
       - name: Docker 이미지 생성
         run: |
           cd booknaraPrj
-          docker build -t acorn-server .
+          docker build --no-cache -t acorn-server .
 
       - name: Docker 이미지에 Tag 붙이기
         run: docker tag acorn-server ${{ steps.login-ecr.outputs.registry }}/acorn-server:latest
