@@ -57,13 +57,13 @@
     <update id="updateInquiryFiles">
         UPDATE INQUIRY
         <set>
-            <if test="file1 != null">
+            <if test="filePath1 != null">
                 FILE_PATH1 = #{filePath1},
             </if>
-            <if test="file2 != null">
+            <if test="filePath2 != null">
                 FILE_PATH2 = #{filePath2},
             </if>
-            <if test="file3 != null">
+            <if test="filePath3 != null">
                 FILE_PATH3 = #{filePath3},
             </if>
             UPDATED_AT = NOW()
