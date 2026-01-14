@@ -18,6 +18,7 @@ import java.util.List;
 @Table(name = "BOOK_ISBN")
 public class AdminBookIsbn {
     //owo
+    //www
     @Id
     @Column(name = "ISBN13", length = 20)
     private String isbn13;
