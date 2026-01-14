@@ -23,7 +23,7 @@ jobs:
         run: echo "${{ secrets.APPLICATION_PROPERTIES }}" > ./booknaraPrj/src/main/resources/application.properties
 
       - name: application-apikey.properties 파일 만들기
-        run: echo "${{ secrets.APPLICATION_PROPERTIES-APIKEY }}" > ./booknaraPrj/src/main/resources/application-apikey.properties
+        run: echo "${{ secrets.APPLICATION_PROPERTIES_APIKEY }}" > ./booknaraPrj/src/main/resources/application-apikey.properties
 
       - name: 권한 주기
         run: chmod +x ./booknaraPrj/gradlew
