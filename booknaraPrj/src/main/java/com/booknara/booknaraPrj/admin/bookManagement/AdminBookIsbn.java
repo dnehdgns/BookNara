@@ -20,6 +20,7 @@ public class AdminBookIsbn {
     //테스트
     //owo
     //테스트2
+    //ㅇㅅㅇ
     @Id
     @Column(name = "ISBN13", length = 20)
     private String isbn13;
