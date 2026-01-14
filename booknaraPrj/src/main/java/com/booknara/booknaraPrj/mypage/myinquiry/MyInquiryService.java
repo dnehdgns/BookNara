@@ -81,7 +81,7 @@ public class MyInquiryService {
 
             // String savedName = UUID.randomUUID() + "_" + file.getOriginalFilename();
             String savedName =   file.getOriginalFilename();
-            File dest = new File(uploadDir + '/' +savedName);
+            File dest = new File(uploadDir , savedName);
             file.transferTo(dest);
 
             return savedName; // DB에 저장할 값
