@@ -19,6 +19,7 @@ import java.util.List;
 public class AdminBookIsbn {
     //o3o
     //owo
+    //;;;
     @Id
     @Column(name = "ISBN13", length = 20)
     private String isbn13;
