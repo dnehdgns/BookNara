@@ -2,6 +2,7 @@ package com.booknara.booknaraPrj.mypage.myinquiry;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -17,6 +18,9 @@ import java.util.UUID;
 public class MyInquiryService {
 
     private final MyInquiryMapper inquiryMapper;
+
+    @Value("uploads.path}")
+    private String uploadDir;
 
     public List<MyInquiryHistoryDto> getMyInquiry(String userId, String keyword) {
         return inquiryMapper.selectMyInquiry(userId, keyword);
@@ -70,7 +74,8 @@ public class MyInquiryService {
     =============================== */
     private String saveFileAndReturnPath(MultipartFile file) {
         try {
-            String uploadDir = "C:/uploads/";
+
+
             File dir = new File(uploadDir);
             if (!dir.exists()) dir.mkdirs();
 

@@ -20,6 +20,7 @@ import com.booknara.booknaraPrj.admin.users.Users;
 import com.booknara.booknaraPrj.notification.dto.NotificationEntity;
 import com.booknara.booknaraPrj.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.*;
@@ -61,6 +62,10 @@ public class AdminController {
     private final StatisticsService statisticsService;
     private final AdminNotificationService adminNotificationService;
     private final NotificationService notificationService;
+
+
+    @Value("uploads.path}")
+    private String uploadDir;
 
     @GetMapping("/BookManageMent")
     public String bookManagement(
@@ -371,7 +376,7 @@ public class AdminController {
     public ResponseEntity<Resource> downloadFile(@PathVariable String fileName) {
         try {
             String decodedFileName = URLDecoder.decode(fileName, StandardCharsets.UTF_8);
-            Path path = Paths.get("C:/uploads").resolve(decodedFileName).normalize();
+            Path path = Paths.get(uploadDir).resolve(decodedFileName).normalize();
             File file = path.toFile();
 
             if (!file.exists()) {
