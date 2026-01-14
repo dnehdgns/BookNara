@@ -59,12 +59,12 @@ public class MyInquiryService {
         }
 
         // 5️⃣ FILE_PATH_1~3 UPDATE
-        int updated = inquiryMapper.updateInquiryFiles(
-                inqId,
-                filePaths[0],
-                filePaths[1],
-                filePaths[2]
-        );
+//        int updated = inquiryMapper.updateInquiryFiles(
+//                inqId,
+//                filePaths[0],
+//                filePaths[1],
+//                filePaths[2]
+//        );
 
 
     }
@@ -81,7 +81,7 @@ public class MyInquiryService {
 
             // String savedName = UUID.randomUUID() + "_" + file.getOriginalFilename();
             String savedName =   file.getOriginalFilename();
-            File dest = new File(uploadDir + savedName);
+            File dest = new File(uploadDir + '/' +savedName);
             file.transferTo(dest);
 
             return savedName; // DB에 저장할 값
