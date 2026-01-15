@@ -865,7 +865,7 @@
 
         // 3. 전자책만 있을 시 -> 무료 대여 로직
         try {
-            const res = await fetch("/book/cart/checkout/free", { method: "POST" });
+            const res = await fetch("/book/cart/checkout/paid", { method: "POST" });
             const json = await res.json().catch(()=> ({}));
 
             if (!res.ok || !json.ok) {
