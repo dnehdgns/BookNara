@@ -17,6 +17,7 @@
         AND i.TARGET_ID = e.EVENT_ID
         AND i.IMG_TYPE = 'MAIN'
         WHERE e.END_AT >= NOW()
+        AND e.EVENT_MAIN_YN = 'Y'
         ORDER BY e.START_AT ASC
     </select>
 
