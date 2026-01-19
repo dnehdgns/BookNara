@@ -35,12 +35,6 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
 
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
-
-                        .requestMatchers(HttpMethod.GET,
-                                "/book/review/list",
-                                "/book/cart/*/status"
-                        ).permitAll()
 
                         .requestMatchers(
                                 "/",
@@ -102,6 +96,12 @@ public class SecurityConfig {
                                 "/404",
                                 "/405",
                                 "/500"
+                        ).permitAll()
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET,
+                                "/book/review/list",
+                                "/book/cart/*/status"
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST,
                                 "/users/find-id",
